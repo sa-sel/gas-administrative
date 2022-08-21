@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "experimentalDecorators": true,
+    "forceConsistentCasingInFileNames": true,
+    "importHelpers": true,
+    "lib": ["esnext"],
+    "module": "es2020",
+    "moduleResolution": "node",
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "sourceMap": true,
+    "target": "ES2019",
+    "baseUrl": "./",
+    "paths": {
+      "@lib/*": ["src/lib/src/*"],
+      "@globals": ["src/lib/src/utils/constants/globals.constant.ts"],
+      "@models": ["src/models"],
+      "@utils/*": ["src/utils/*"],
+      "@core/*": ["src/core/*"]
+    }
+  }
+}
