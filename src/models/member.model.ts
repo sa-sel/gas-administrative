@@ -1,4 +1,3 @@
-export type MemberModel = {
-  name: string;
-  email: string;
-};
+import { StudentBasicModel } from '@lib/models';
+
+export type MemberModel = StudentBasicModel & { email: string };

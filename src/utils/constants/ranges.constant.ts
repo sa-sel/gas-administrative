@@ -3,4 +3,9 @@ export const enum NamedRange {
   ProjectCreationTemplatesFolderId = 'ProjectCreationTemplatesFolderId',
   ProjectMembersSpreadsheetTemplateId = 'ProjectMembersSpreadsheetTemplateId',
   ProjectMembersSpreadsheetTemplateSheetName = 'ProjectMembersSpreadsheetTemplateSheetName',
+
+  ProjectManager = 'ProjectManager',
+  ProjectName = 'ProjectName',
+  ProjectDepartment = 'ProjectDepartment',
+  ProjectEdition = 'ProjectEdition',
 }
