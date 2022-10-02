@@ -10,13 +10,14 @@
     "noImplicitReturns": true,
     "sourceMap": true,
     "target": "ES2019",
-    "baseUrl": "./",
+    "baseUrl": "./src/",
     "paths": {
-      "@lib/*": ["src/lib/src/*"],
-      "@globals": ["src/lib/src/utils/constants/globals.constant.ts"],
-      "@models": ["src/models"],
-      "@utils/*": ["src/utils/*"],
-      "@core/*": ["src/core/*"]
+      "@hr/*": ["hr/src/*"],
+      "@lib/*": ["lib/src/*"],
+      "@globals": ["lib/src/utils/constants/globals.constant.ts"],
+      "@models": ["models"],
+      "@utils/*": ["utils/*"],
+      "@core/*": ["core/*"]
     }
   }
 }
