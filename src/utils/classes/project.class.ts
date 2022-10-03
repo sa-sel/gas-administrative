@@ -1,10 +1,10 @@
 import { SaDepartment } from '@lib/constants';
 import { appendDataToSheet, copyInsides, formatDate, getNamedValue, substituteVariables } from '@lib/functions';
 import { Folder } from '@lib/models';
+import { MemberModel } from '@models';
 import { DocVariable, NamedRange, NamingConvention } from '@utils/constants';
-import { MemberModel } from 'src/models/member.model';
 
-// TODO: add proggress logs
+// TODO: add progress logs
 
 export class Project {
   private defaultEdition = `${new Date().getFullYear()}.${new Date().getMonth() > 5 ? 2 : 1}`;
