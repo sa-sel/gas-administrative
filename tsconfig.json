@@ -13,6 +13,7 @@
     "baseUrl": "./src/",
     "paths": {
       "@hr/*": ["hr/src/*"],
+      "@lib": ["lib/src"],
       "@lib/*": ["lib/src/*"],
       "@globals": ["lib/src/utils/constants/globals.constant.ts"],
       "@models": ["models"],

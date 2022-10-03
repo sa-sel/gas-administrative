@@ -3,6 +3,7 @@
 cd "$(dirname "${BASH_SOURCE[0]}")"/..
 
 # setup .build
+rm -rf .build
 mkdir -p .build
 cp -r src/* .build
 cp tsconfig.json .build
