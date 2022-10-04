@@ -25,7 +25,7 @@ export class Project {
 
   setManager(manager?: string): Project {
     if (manager) {
-      this.manager = manager;
+      this.manager = manager.trim();
     }
 
     return this;
@@ -33,7 +33,7 @@ export class Project {
 
   setEdition(edition?: string): Project {
     if (edition) {
-      this.edition = `${this.defaultEdition} - ${edition}`;
+      this.edition = edition.trim();
     }
 
     return this;
