@@ -1,1 +1,1 @@
-export * from './project.class'
+export * from './project.class';
