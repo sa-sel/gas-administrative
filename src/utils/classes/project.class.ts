@@ -62,7 +62,7 @@ export class Project {
   }
 
   createFolder(): Folder {
-    const departmentFolderIt = DriveApp.getFolderById(NamedRange.DriveRoot).getFoldersByName(
+    const departmentFolderIt = DriveApp.getFolderById(getNamedValue(NamedRange.DriveRoot)).getFoldersByName(
       this.department !== SaDepartment.Administrative
         ? `${NamingConvention.DepartmentFolderPrefix}${this.department}`
         : `${NamingConvention.AdministrativeFolderPrefix}${this.department}`,
