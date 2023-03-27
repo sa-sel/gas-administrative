@@ -97,7 +97,7 @@ export class Project {
                 [DocVariable.ProjectName]: this.name,
                 [DocVariable.ProjectStart]: formatDate(this.start),
               },
-              SpreadsheetApp.open(file) ?? DocumentApp.openById(file.getId()),
+              file.getMimeType() === MimeType.GOOGLE_SHEETS ? SpreadsheetApp.open(file) : DocumentApp.openById(file.getId()),
             ),
         );
       }
