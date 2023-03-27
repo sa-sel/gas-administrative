@@ -1,3 +1,4 @@
+import { getDirector } from '@hr/utils/functions';
 import { SaDepartment } from '@lib/constants';
 import { appendDataToSheet, copyInsides, formatDate, getNamedValue, substituteVariables } from '@lib/functions';
 import { Folder } from '@lib/models';
@@ -13,7 +14,9 @@ export class Project {
 
   edition: string;
 
-  manager: string;
+  manager: MemberModel;
+
+  director: MemberModel;
 
   members: MemberModel[];
 
@@ -21,11 +24,20 @@ export class Project {
     this.edition = this.defaultEdition;
     this.start = new Date();
     this.members = [];
+    this.director = getDirector(this.department);
   }
 
-  setManager(manager?: string): Project {
+  setManager(manager?: MemberModel): Project {
     if (manager) {
-      this.manager = manager.trim();
+      this.manager = manager;
+    }
+
+    return this;
+  }
+
+  setDirector(director?: MemberModel): Project {
+    if (director) {
+      this.director = director;
     }
 
     return this;
@@ -41,6 +53,8 @@ export class Project {
 
   setMembers(members?: MemberModel[]): Project {
     if (members) {
+      this.manager && !members.some(m => m.nUsp === this.manager.nUsp) && members.push(this.manager);
+      this.manager && !members.some(m => m.nUsp === this.manager.nUsp) && members.push(this.manager);
       this.members = members;
     }
 
