@@ -3,6 +3,8 @@ export const enum DocVariable {
   ProjectDepartment = '{{projectDepartment}}',
   ProjectEdition = '{{projectEdition}}',
   ProjectManager = '{{projectManager}}',
+  ProjectDirector = '{{projectDirector}}',
   ProjectName = '{{projectName}}',
   ProjectStart = '{{projectStart}}',
+  ProjectMembers = '{{projectMembers}}',
 }

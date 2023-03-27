@@ -4,6 +4,7 @@ import { appendDataToSheet, copyInsides, formatDate, getNamedValue, substituteVa
 import { Folder } from '@lib/models';
 import { MemberModel } from '@models';
 import { DocVariable, NamedRange, NamingConvention } from '@utils/constants';
+import { memberToString } from '@utils/functions';
 
 // TODO: add progress logs
 
@@ -77,6 +78,7 @@ export class Project {
     const projectFolder = projectFolderIt.hasNext() ? projectFolderIt.next() : departmentFolder.createFolder(this.name);
     const targetDir = projectFolder.createFolder(this.edition);
     const templatesFolders = DriveApp.getFolderById(getNamedValue(NamedRange.ProjectCreationTemplatesFolderId)).getFolders();
+    const { templateVariables } = this;
 
     // copy general templates to project folder
     while (templatesFolders.hasNext()) {
@@ -86,27 +88,20 @@ export class Project {
         copyInsides(
           folder,
           targetDir,
-          name => name.replace(DocVariable.ProjectName, this.name),
+          name => Object.entries(templateVariables).reduce((title, [variable, value]) => title.replace(variable, value), name),
           file =>
             substituteVariables(
-              {
-                [DocVariable.MeetingType]: `${NamingConvention.ProjectMinutesPrefix}${this.name}`,
-                [DocVariable.ProjectDepartment]: this.department,
-                [DocVariable.ProjectEdition]: this.edition,
-                [DocVariable.ProjectManager]: this.manager ?? '?',
-                [DocVariable.ProjectName]: this.name,
-                [DocVariable.ProjectStart]: formatDate(this.start),
-              },
+              templateVariables,
               file.getMimeType() === MimeType.GOOGLE_SHEETS ? SpreadsheetApp.open(file) : DocumentApp.openById(file.getId()),
             ),
         );
       }
     }
 
-    // copy project members spreadsheet template to project folder
+    // copy project team spreadsheet template to project folder
     const membersSheetTemplate = DriveApp.getFileById(getNamedValue(NamedRange.ProjectMembersSpreadsheetTemplateId));
     const membersSheetFile = membersSheetTemplate.makeCopy(
-      membersSheetTemplate.getName().replace(DocVariable.ProjectName, this.name),
+      membersSheetTemplate.getName().replace(DocVariable.ProjectName, this.name).replace(DocVariable.ProjectEdition, this.edition),
       targetDir,
     );
 
@@ -114,9 +109,22 @@ export class Project {
     appendDataToSheet(
       this.members,
       SpreadsheetApp.open(membersSheetFile).getSheetByName(getNamedValue(NamedRange.ProjectMembersSpreadsheetTemplateSheetName)),
-      member => [member.name, member.email],
+      member => [member.name, member.nickname, member.email],
     );
 
     return targetDir;
+  }
+
+  private get templateVariables(): Record<DocVariable, string> {
+    return {
+      [DocVariable.MeetingType]: `${NamingConvention.ProjectMinutesPrefix}${this.name}`,
+      [DocVariable.ProjectDepartment]: this.department,
+      [DocVariable.ProjectEdition]: this.edition,
+      [DocVariable.ProjectManager]: this.manager ? memberToString(this.manager) : '?',
+      [DocVariable.ProjectDirector]: this.director ? memberToString(this.director) : '?',
+      [DocVariable.ProjectName]: this.name,
+      [DocVariable.ProjectStart]: formatDate(this.start),
+      [DocVariable.ProjectMembers]: this.members.reduce((acc, cur) => `${acc}• ${memberToString(cur)}\n`, ''),
+    };
   }
 }
