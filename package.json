@@ -14,7 +14,6 @@
     "push": "scripts/push.sh"
   },
   "dependencies": {
-    "@sa-sel/hr": "file:src/hr",
     "@sa-sel/lib": "file:src/lib"
   },
   "devDependencies": {

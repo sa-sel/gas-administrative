@@ -1,31 +1,12 @@
-import { createProject as hrSheetSaveProject } from '@hr/core';
-import { GS as HRGS } from '@hr/lib';
 import { ProjectMemberModel, ProjectRole } from '@hr/models';
-import { SheetName as SheetNameHR, sheets } from '@hr/utils/constants';
-import { getDirector } from '@hr/utils/functions';
+import { createProject as hrSheetSaveProject } from '@hr/utils/functions';
+import { getMemberData } from '@hr/utils/functions/member.util';
 import { fetchData, getNamedValue, GS, SaDepartment, toString } from '@lib';
 import { MemberModel } from '@models';
 import { Project } from '@utils/classes';
 import { NamedRange } from '@utils/constants';
 
-/** Override HR spreadsheet's sheet objects (previously created from active sheet). */
-const overrideSheetsHR = (): void => {
-  const hrSpreadsheet = SpreadsheetApp.openById(getNamedValue(NamedRange.SheetIdHR));
-
-  HRGS.ss = hrSpreadsheet;
-  sheets.caringMembers = hrSpreadsheet.getSheetByName(SheetNameHR.CaringMembers);
-  sheets.caringProjects = hrSpreadsheet.getSheetByName(SheetNameHR.CaringProjects);
-  sheets.dashboard = hrSpreadsheet.getSheetByName(SheetNameHR.Dashboard);
-  sheets.mainData = hrSpreadsheet.getSheetByName(SheetNameHR.MainData);
-  sheets.meetingAttendance = hrSpreadsheet.getSheetByName(SheetNameHR.MeetingAttendance);
-  sheets.meetingAttendanceChart = hrSpreadsheet.getSheetByName(SheetNameHR.MeetingAttendanceChart);
-  sheets.newMembers = hrSpreadsheet.getSheetByName(SheetNameHR.NewMembers);
-  sheets.projectMemberships = hrSpreadsheet.getSheetByName(SheetNameHR.ProjectMemberships);
-};
-
 export const createProject = (): void => {
-  overrideSheetsHR();
-
   const project = new Project(getNamedValue(NamedRange.ProjectName), getNamedValue(NamedRange.ProjectDepartment) as SaDepartment)
     .setEdition(getNamedValue(NamedRange.ProjectEdition))
     .setManager(getNamedValue(NamedRange.ProjectManager));
@@ -57,6 +38,6 @@ export const createProject = (): void => {
     filter: row => row[2] && row[4],
   });
 
-  hrSheetSaveProject(project.name, members);
+  hrSheetSaveProject(`${project.name} (${project.edition})`, members);
   project.setMembers(members).createFolder();
 };

@@ -12,7 +12,7 @@
     "target": "ES2019",
     "baseUrl": "./src/",
     "paths": {
-      "@hr/*": ["hr/src/*"],
+      "@hr/*": ["hr/*"],
       "@lib": ["lib/src"],
       "@lib/*": ["lib/src/*"],
       "@globals": ["lib/src/utils/constants/globals.constant.ts"],
