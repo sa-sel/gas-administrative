@@ -11,13 +11,36 @@ export const enum hrSheetName {
   ProjectMemberships = 'Diretorias e Projetos',
 }
 
-export const hrSheets = {
-  caringMembers: HRGS.ss.getSheetByName(hrSheetName.CaringMembers),
-  caringProjects: HRGS.ss.getSheetByName(hrSheetName.CaringProjects),
-  dashboard: HRGS.ss.getSheetByName(hrSheetName.Dashboard),
-  mainData: HRGS.ss.getSheetByName(hrSheetName.MainData),
-  meetingAttendance: HRGS.ss.getSheetByName(hrSheetName.MeetingAttendance),
-  meetingAttendanceChart: HRGS.ss.getSheetByName(hrSheetName.MeetingAttendanceChart),
-  newMembers: HRGS.ss.getSheetByName(hrSheetName.NewMembers),
-  projectMemberships: HRGS.ss.getSheetByName(hrSheetName.ProjectMemberships),
-};
+export class hrSheets {
+  static get caringMembers() {
+    return HRGS.ss.getSheetByName(hrSheetName.CaringMembers);
+  }
+
+  static get caringProjects() {
+    return HRGS.ss.getSheetByName(hrSheetName.CaringProjects);
+  }
+
+  static get dashboard() {
+    return HRGS.ss.getSheetByName(hrSheetName.Dashboard);
+  }
+
+  static get mainData() {
+    return HRGS.ss.getSheetByName(hrSheetName.MainData);
+  }
+
+  static get meetingAttendance() {
+    return HRGS.ss.getSheetByName(hrSheetName.MeetingAttendance);
+  }
+
+  static get meetingAttendanceChart() {
+    return HRGS.ss.getSheetByName(hrSheetName.MeetingAttendanceChart);
+  }
+
+  static get newMembers() {
+    return HRGS.ss.getSheetByName(hrSheetName.NewMembers);
+  }
+
+  static get projectMemberships() {
+    return HRGS.ss.getSheetByName(hrSheetName.ProjectMemberships);
+  }
+}
