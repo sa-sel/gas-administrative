@@ -1,7 +1,7 @@
-import { getDirector } from '@hr/utils/functions';
-import { SaDepartment } from '@lib/constants';
-import { appendDataToSheet, copyInsides, formatDate, getNamedValue, substituteVariables } from '@lib/functions';
-import { Folder } from '@lib/models';
+import { getDirector, getMemberData } from '@hr/utils';
+import { GS, SaDepartment } from '@lib/constants';
+import { appendDataToSheet, copyInsides, createOrGetFolder, formatDate, getNamedValue, substituteVariables } from '@lib/functions';
+import { File, Folder } from '@lib/models';
 import { MemberModel } from '@models';
 import { DocVariable, NamedRange, NamingConvention } from '@utils/constants';
 import { memberToString } from '@utils/functions';
@@ -95,12 +95,8 @@ export class Project {
         copyInsides(
           folder,
           targetDir,
-          name => Object.entries(templateVariables).reduce((title, [variable, value]) => title.replace(variable, value), name),
-          file =>
-            substituteVariables(
-              templateVariables,
-              file.getMimeType() === MimeType.GOOGLE_SHEETS ? SpreadsheetApp.open(file) : DocumentApp.openById(file.getId()),
-            ),
+          name => this.processTemplateName(name, templateVariables),
+          file => this.processTemplateBody(file, templateVariables),
         );
       }
     }
@@ -122,16 +118,45 @@ export class Project {
     return targetDir;
   }
 
+  /** Create the opening doc or just return it if it already exists (also force set last updated date). */
+  createOrGetOpeningDoc(): File {
+    const openingDocTemplate = DriveApp.getFileById(getNamedValue(NamedRange.ProjectOpeningDocId));
+    const tmpDir = createOrGetFolder('.tmp', DriveApp.getFileById(GS.ss.getId()).getParents().next());
+    const openingDocName = this.processTemplateName(openingDocTemplate.getName());
+    const fileIterator = tmpDir.getFilesByName(openingDocName);
+
+    if (fileIterator.hasNext()) {
+      return fileIterator.next().setName(openingDocName);
+    }
+
+    const docFile = openingDocTemplate.makeCopy(this.processTemplateName(openingDocTemplate.getName()), tmpDir);
+
+    this.processTemplateBody(docFile);
+
+    return docFile;
+  }
+
+  private processTemplateName(name: string, templateVariables = this.templateVariables) {
+    return Object.entries(templateVariables).reduce((title, [variable, value]) => title.replace(variable, value), name);
+  }
+
+  private processTemplateBody(file: File, templateVariables = this.templateVariables) {
+    return substituteVariables(
+      templateVariables,
+      file.getMimeType() === MimeType.GOOGLE_SHEETS ? SpreadsheetApp.open(file) : DocumentApp.openById(file.getId()),
+    );
+  }
+
   private get templateVariables(): Record<DocVariable, string> {
     return {
       [DocVariable.MeetingType]: `${NamingConvention.ProjectMinutesPrefix}${this.name}`,
-      [DocVariable.ProjectDepartment]: this.department,
+      [DocVariable.ProjectDepartment]: this.department || DocVariable.ProjectDepartment,
       [DocVariable.ProjectEdition]: this.edition,
-      [DocVariable.ProjectManager]: this.manager ? memberToString(this.manager) : '?',
-      [DocVariable.ProjectDirector]: this.director ? memberToString(this.director) : '?',
+      [DocVariable.ProjectManager]: (this.manager ? memberToString(this.manager) : '?') || DocVariable.ProjectManager,
+      [DocVariable.ProjectDirector]: (this.director ? memberToString(this.director) : '?') || DocVariable.ProjectDirector,
       [DocVariable.ProjectName]: this.name,
       [DocVariable.ProjectStart]: formatDate(this.start),
-      [DocVariable.ProjectMembers]: this.members.reduce((acc, cur) => `${acc}• ${memberToString(cur)}\n`, ''),
+      [DocVariable.ProjectMembers]: this.members.reduce((acc, cur) => `${acc}• ${memberToString(cur)}\n`, '') || DocVariable.ProjectMembers,
     };
   }
 }
