@@ -28,6 +28,13 @@ export class Project {
     this.director = getDirector(this.department);
   }
 
+  /** Create project by reading data from the spreadsheet. */
+  static spreadsheetFactory(): Project {
+    return new this(getNamedValue(NamedRange.ProjectName), getNamedValue(NamedRange.ProjectDepartment) as SaDepartment)
+      .setEdition(getNamedValue(NamedRange.ProjectEdition))
+      .setManager(getMemberData(getNamedValue(NamedRange.ProjectManager)?.split(' - ')[1]));
+  }
+
   setManager(manager?: MemberModel): Project {
     if (manager) {
       this.manager = manager;

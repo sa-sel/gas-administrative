@@ -1,7 +1,6 @@
 import { ProjectMemberModel, ProjectRole } from '@hr/models';
-import { createProject as hrSheetSaveProject } from '@hr/utils/functions';
-import { getMemberData } from '@hr/utils/functions/member.util';
-import { DialogTitle, GS, SaDepartment, fetchData, getNamedValue, institutionalEmails, toString } from '@lib';
+import { createProject as hrSheetSaveProject } from '@hr/utils';
+import { DialogTitle, GS, fetchData, institutionalEmails, toString } from '@lib';
 import { Logger, SafeWrapper } from '@lib/classes';
 import { MemberModel } from '@models';
 import { Project } from '@utils/classes';
@@ -9,9 +8,7 @@ import { NamedRange } from '@utils/constants';
 
 export const createProject = () =>
   SafeWrapper.factory(createProject.name, institutionalEmails).wrap((logger: Logger): void => {
-    const project = new Project(getNamedValue(NamedRange.ProjectName), getNamedValue(NamedRange.ProjectDepartment) as SaDepartment)
-      .setEdition(getNamedValue(NamedRange.ProjectEdition))
-      .setManager(getMemberData(getNamedValue(NamedRange.ProjectManager).split(' - ')[1]));
+    const project = Project.spreadsheetFactory();
 
     if (!project.name || !project.edition || !project.manager || !project.department) {
       throw Error('Estão faltando informações do projeto a ser aberto. São necessário pelo menos nome, edição, gerente e área.');
@@ -59,4 +56,4 @@ export const createProject = () =>
     const dir = project.setMembers(members).createFolder();
 
     logger.log(`${DialogTitle.Success}`, `Pasta no Drive criada: ${dir.getName()} (${dir.getUrl()})`);
-  })();
+  });
