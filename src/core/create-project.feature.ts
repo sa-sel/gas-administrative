@@ -13,6 +13,10 @@ export const createProject = () =>
       .setEdition(getNamedValue(NamedRange.ProjectEdition))
       .setManager(getMemberData(getNamedValue(NamedRange.ProjectManager).split(' - ')[1]));
 
+    if (!project.name || !project.edition || !project.manager || !project.department) {
+      throw Error('Estão faltando informações do projeto a ser aberto. São necessário pelo menos nome, edição, gerente e área.');
+    }
+
     logger.log(DialogTitle.InProgress, `Execução iniciada para projeto "${project.name}".`);
 
     const members: (MemberModel & ProjectMemberModel)[] = fetchData(GS.ss.getRangeByName(NamedRange.ProjectMembers), {
