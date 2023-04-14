@@ -1,10 +1,17 @@
 export const enum DocVariable {
   MeetingType = '{{meetingType}}',
-  ProjectDepartment = '{{projectDepartment}}',
-  ProjectEdition = '{{projectEdition}}',
-  ProjectManager = '{{projectManager}}',
-  ProjectDirector = '{{projectDirector}}',
-  ProjectName = '{{projectName}}',
-  ProjectStart = '{{projectStart}}',
-  ProjectMembers = '{{projectMembers}}',
+}
+
+export const enum ProjectVariable {
+  Department = '{{projectDepartment}}',
+  Edition = '{{projectEdition}}',
+  Manager = '{{projectManager}}',
+  ManagerEmail = '{{projectManagerEmail}}',
+  Director = '{{projectDirector}}',
+  DirectorEmail = '{{projectDirectorEmail}}',
+  Name = '{{projectName}}',
+  Start = '{{projectStart}}',
+  Members = '{{projectMembers}}',
+  MembersHtmlList = '{{projectMembersHtmlList}}',
+  FolderUrl = '{{projectFolderUrl}}',
 }

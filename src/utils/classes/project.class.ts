@@ -1,10 +1,14 @@
 import { getDirector, getMemberData } from '@hr/utils';
 import { SaDepartment } from '@lib/constants';
 import { appendDataToSheet, copyInsides, exportToPdf, formatDate, getNamedValue, substituteVariables } from '@lib/functions';
+import { sendEmail } from '@lib/functions/email.util';
 import { File, Folder } from '@lib/models';
 import { MemberModel } from '@models';
-import { DocVariable, NamedRange, NamingConvention } from '@utils/constants';
+import { NamedRange, NamingConvention, ProjectVariable } from '@utils/constants';
 import { getTmpFolder, memberToString } from '@utils/functions';
+
+// TODO: how to use "@views/" here?
+import emailBodyHtml from '../../../src/views/create-project.email.html';
 
 // TODO: add progress logs
 
@@ -118,6 +122,7 @@ export class Project {
       openingDocPdf = exportToPdf(openingDoc).moveTo(this.folder);
       openingDoc.setTrashed(true);
     }
+
     // copy project team spreadsheet template to project folder
     const membersSheetTemplate = DriveApp.getFileById(getNamedValue(NamedRange.ProjectMembersSpreadsheetTemplateId));
     const membersSheetFile = membersSheetTemplate.makeCopy(
@@ -132,7 +137,12 @@ export class Project {
       member => [member.name, member.nickname, member.email],
     );
 
-    return targetDir;
+    sendEmail({
+      subject: `Abertura de Projeto - ${this.name} (${this.edition})`,
+      target: this.members.map(({ email }) => email),
+      htmlBody: this.processStringTemplate(emailBodyHtml),
+      attachments: openingDocPdf && [openingDocPdf],
+    });
 
     return this.folder;
   }
@@ -159,16 +169,23 @@ export class Project {
     return Object.entries(templateVariables).reduce((title, [variable, value]) => title.replace(variable, value), name);
   }
 
-  private get templateVariables(): Record<DocVariable, string> {
+  private get templateVariables(): Record<ProjectVariable, string> {
     return {
-      [DocVariable.MeetingType]: `${NamingConvention.ProjectMinutesPrefix}${this.name}`,
-      [DocVariable.ProjectDepartment]: this.department || DocVariable.ProjectDepartment,
-      [DocVariable.ProjectEdition]: this.edition,
-      [DocVariable.ProjectManager]: (this.manager ? memberToString(this.manager) : '?') || DocVariable.ProjectManager,
-      [DocVariable.ProjectDirector]: (this.director ? memberToString(this.director) : '?') || DocVariable.ProjectDirector,
-      [DocVariable.ProjectName]: this.name,
-      [DocVariable.ProjectStart]: formatDate(this.start),
-      [DocVariable.ProjectMembers]: this.members.reduce((acc, cur) => `${acc}• ${memberToString(cur)}\n`, '') || DocVariable.ProjectMembers,
+      [ProjectVariable.Department]: this.department || ProjectVariable.Department,
+      [ProjectVariable.Edition]: this.edition,
+      [ProjectVariable.Manager]: this.manager ? memberToString(this.manager) : ProjectVariable.Manager,
+      [ProjectVariable.Director]: this.director ? memberToString(this.director) : ProjectVariable.Director,
+      [ProjectVariable.ManagerEmail]: this.manager?.email || ProjectVariable.ManagerEmail,
+      [ProjectVariable.DirectorEmail]: this.director?.email || ProjectVariable.DirectorEmail,
+      [ProjectVariable.Name]: this.name,
+      [ProjectVariable.Start]: formatDate(this.start),
+      [ProjectVariable.Members]: this.members.reduce((acc, cur) => `${acc}• ${memberToString(cur)}\n`, '') || ProjectVariable.Members,
+      [ProjectVariable.MembersHtmlList]:
+        this.members.reduce(
+          (acc, cur) => `${acc}<li><a href="mailto:${cur.email}" target="_blank">${memberToString(cur)}</a></li>\n`,
+          '',
+        ) || ProjectVariable.MembersHtmlList,
+      [ProjectVariable.FolderUrl]: this.folder?.getUrl() || ProjectVariable.FolderUrl,
     };
   }
 }
