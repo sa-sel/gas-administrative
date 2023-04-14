@@ -1,10 +1,10 @@
 import { getDirector, getMemberData } from '@hr/utils';
-import { GS, SaDepartment } from '@lib/constants';
-import { appendDataToSheet, copyInsides, createOrGetFolder, formatDate, getNamedValue, substituteVariables } from '@lib/functions';
+import { SaDepartment } from '@lib/constants';
+import { appendDataToSheet, copyInsides, exportToPdf, formatDate, getNamedValue, substituteVariables } from '@lib/functions';
 import { File, Folder } from '@lib/models';
 import { MemberModel } from '@models';
 import { DocVariable, NamedRange, NamingConvention } from '@utils/constants';
-import { memberToString } from '@utils/functions';
+import { getTmpFolder, memberToString } from '@utils/functions';
 
 // TODO: add progress logs
 
@@ -20,6 +20,8 @@ export class Project {
   director: MemberModel;
 
   members: MemberModel[];
+
+  folder: Folder;
 
   constructor(public name: string, public department: SaDepartment) {
     this.edition = this.defaultEdition;
@@ -83,8 +85,10 @@ export class Project {
     const departmentFolder = departmentFolderIt.next();
     const projectFolderIt = departmentFolder.getFoldersByName(this.name);
     const projectFolder = projectFolderIt.hasNext() ? projectFolderIt.next() : departmentFolder.createFolder(this.name);
-    const targetDir = projectFolder.createFolder(this.edition);
     const templatesFolders = DriveApp.getFolderById(getNamedValue(NamedRange.ProjectCreationTemplatesFolderId)).getFolders();
+
+    this.folder = projectFolder.createFolder(this.edition);
+
     const { templateVariables } = this;
 
     // copy general templates to project folder
@@ -94,18 +98,31 @@ export class Project {
       if (this.name.match(folder.getName())) {
         copyInsides(
           folder,
-          targetDir,
-          name => this.processTemplateName(name, templateVariables),
-          file => this.processTemplateBody(file, templateVariables),
+          this.folder,
+          name => this.processStringTemplate(name, templateVariables),
+          file => substituteVariables(file, templateVariables),
         );
       }
     }
 
+    // export opening doc PDF to project folder
+    let openingDocPdf: File;
+    const openingDocIt = getTmpFolder().getFilesByName(
+      this.processStringTemplate(NamingConvention.OpeningDocTemplanteName, templateVariables),
+    );
+
+    if (openingDocIt.hasNext()) {
+      const openingDoc = openingDocIt.next();
+
+      substituteVariables(openingDoc, templateVariables);
+      openingDocPdf = exportToPdf(openingDoc).moveTo(this.folder);
+      openingDoc.setTrashed(true);
+    }
     // copy project team spreadsheet template to project folder
     const membersSheetTemplate = DriveApp.getFileById(getNamedValue(NamedRange.ProjectMembersSpreadsheetTemplateId));
     const membersSheetFile = membersSheetTemplate.makeCopy(
-      membersSheetTemplate.getName().replace(DocVariable.ProjectName, this.name).replace(DocVariable.ProjectEdition, this.edition),
-      targetDir,
+      membersSheetTemplate.getName().replace(ProjectVariable.Name, this.name).replace(ProjectVariable.Edition, this.edition),
+      this.folder,
     );
 
     // write members list to project members sheet
@@ -116,35 +133,30 @@ export class Project {
     );
 
     return targetDir;
+
+    return this.folder;
   }
 
   /** Create the opening doc or just return it if it already exists (also force set last updated date). */
   createOrGetOpeningDoc(): File {
     const openingDocTemplate = DriveApp.getFileById(getNamedValue(NamedRange.ProjectOpeningDocId));
-    const tmpDir = createOrGetFolder('.tmp', DriveApp.getFileById(GS.ss.getId()).getParents().next());
-    const openingDocName = this.processTemplateName(openingDocTemplate.getName());
+    const tmpDir = getTmpFolder();
+    const openingDocName = this.processStringTemplate(NamingConvention.OpeningDocTemplanteName);
     const fileIterator = tmpDir.getFilesByName(openingDocName);
 
     if (fileIterator.hasNext()) {
       return fileIterator.next().setName(openingDocName);
     }
 
-    const docFile = openingDocTemplate.makeCopy(this.processTemplateName(openingDocTemplate.getName()), tmpDir);
+    const openingDoc = openingDocTemplate.makeCopy(openingDocName, tmpDir);
 
-    this.processTemplateBody(docFile);
+    substituteVariables(openingDoc, this.templateVariables);
 
-    return docFile;
+    return openingDoc;
   }
 
-  private processTemplateName(name: string, templateVariables = this.templateVariables) {
+  private processStringTemplate(name: string, templateVariables = this.templateVariables): string {
     return Object.entries(templateVariables).reduce((title, [variable, value]) => title.replace(variable, value), name);
-  }
-
-  private processTemplateBody(file: File, templateVariables = this.templateVariables) {
-    return substituteVariables(
-      templateVariables,
-      file.getMimeType() === MimeType.GOOGLE_SHEETS ? SpreadsheetApp.open(file) : DocumentApp.openById(file.getId()),
-    );
   }
 
   private get templateVariables(): Record<DocVariable, string> {
