@@ -1,18 +1,43 @@
-import { DialogTitle, Logger, SafeWrapper, alert } from '@lib';
+import { DialogTitle, DiscordEmbed, DiscordWebhook, Logger, SafeWrapper, alert, getNamedValue } from '@lib';
 import { Project } from '@utils/classes';
-import { upsertProject } from '@utils/functions';
+import { NamedRange } from '@utils/constants';
+import { memberToString, upsertProject } from '@utils/functions';
+
+const buildProjectDiscordEmbeds = (project: Project): DiscordEmbed[] => [
+  {
+    title: 'Documento de Abertura',
+    url: project.openingDoc.getUrl(),
+    timestamp: project.start.toISOString(),
+
+    fields: [
+      { name: 'Nome', value: project.name, inline: true },
+      { name: 'Edição', value: project.edition, inline: true },
+      (project.director || project.manager) && { name: '', value: '' },
+      project.director && { name: 'Direção', value: memberToString(project.director), inline: true },
+      project.manager && { name: 'Gerência', value: memberToString(project.manager), inline: true },
+    ],
+    author: {
+      name: project.fullDepartmentName,
+      url: project.departmentFolder?.getUrl(),
+    },
+  },
+];
 
 export const createProjectOpeningDoc = () =>
   SafeWrapper.factory(createProjectOpeningDoc.name).wrap((logger: Logger): void => {
     const project = Project.spreadsheetFactory();
 
-    if (!project.name || !project.edition) {
-      throw Error('Estão faltando informações do projeto a ser aberto. São necessário pelo menos nome e edição.');
+    if (!project.name || !project.edition || !project.department) {
+      throw Error('Estão faltando informações do projeto a ser aberto. São necessário pelo menos nome, edição e diretoria.');
     }
 
     logger.log(DialogTitle.InProgress, `Execução iniciada para projeto "${project.name}".`);
 
     const doc = project.createOrGetOpeningDoc();
+    const boardWebhook = new DiscordWebhook(getNamedValue(NamedRange.WebhookBoardOfDirectors));
+
+    let body: string;
+    let title: DialogTitle;
 
     // check if the doc was just created or already existed
     if (doc.getDateCreated().valueOf() === doc.getLastUpdated().valueOf()) {
@@ -20,16 +45,16 @@ export const createProjectOpeningDoc = () =>
         logger.log('Insert realizado!', `O projeto "${project.name}" foi salvo na lista de Projetos Existentes.`);
       }
 
-      const body = `Documento de abertura do projeto "${project.name}" criado com sucesso. Acesse o link:\n${doc.getUrl()}`;
-
-      logger.log(DialogTitle.Success, body, false);
-      alert({ title: DialogTitle.Success, body });
+      body = `Documento de abertura do projeto "${project.name}" criado com sucesso. Acesse o link:\n${doc.getUrl()}`;
+      title = DialogTitle.Success;
     } else {
-      const body = `Documento de abertura do projeto "${
-        project.name
-      }" já havia sido criado, porém ainda não foi salvo. Acesse o link:\n${doc.getUrl()}`;
-
-      logger.log(DialogTitle.Aborted, body, false);
-      alert({ title: DialogTitle.Success, body });
+      body =
+        `Documento de abertura do projeto "${project.name}" já havia sido criado, porém ainda não foi salvo. ` +
+        `Acesse o link:\n${doc.getUrl()}`;
+      title = DialogTitle.Aborted;
     }
+
+    logger.log(title, body, false);
+    alert({ title, body });
+    boardWebhook.post({ embeds: buildProjectDiscordEmbeds(project) });
   });

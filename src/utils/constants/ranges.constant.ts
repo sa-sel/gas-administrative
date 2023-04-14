@@ -1,5 +1,9 @@
 export const enum NamedRange {
   DriveRoot = 'DriveRoot',
+
+  WebhookBoardOfDirectors = 'WebhookBoardDirectors',
+  WebhookGeneral = 'WebhookGeneral',
+
   ProjectCreationTemplatesFolderId = 'ProjectCreationTemplatesFolderId',
   ProjectMembersSpreadsheetTemplateId = 'ProjectMembersSpreadsheetTemplateId',
   ProjectMembersSpreadsheetTemplateSheetName = 'ProjectMembersSpreadsheetTemplateSheetName',

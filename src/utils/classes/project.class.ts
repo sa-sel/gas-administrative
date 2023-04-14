@@ -16,22 +16,31 @@ export class Project {
   private defaultEdition = `${new Date().getFullYear()}.${new Date().getMonth() > 5 ? 2 : 1}`;
 
   start: Date;
-
   edition: string;
-
+  fullDepartmentName: string;
   manager: MemberModel;
-
   director: MemberModel;
-
   members: MemberModel[];
-
   folder: Folder;
+  departmentFolder: Folder;
+  openingDoc: File;
 
   constructor(public name: string, public department: SaDepartment) {
     this.edition = this.defaultEdition;
     this.start = new Date();
     this.members = [];
     this.director = getDirector(this.department);
+
+    this.fullDepartmentName =
+      this.department !== SaDepartment.Administrative
+        ? `${NamingConvention.DepartmentFolderPrefix}${this.department}`
+        : `${NamingConvention.AdministrativeFolderPrefix}${this.department}`;
+
+    const departmentFolderIt = DriveApp.getFolderById(getNamedValue(NamedRange.DriveRoot))?.getFoldersByName(this.fullDepartmentName);
+
+    if (departmentFolderIt.hasNext()) {
+      this.departmentFolder = departmentFolderIt.next();
+    }
   }
 
   /** Create project by reading data from the spreadsheet. */
@@ -76,19 +85,12 @@ export class Project {
   }
 
   createFolder(): Folder {
-    const departmentFolderIt = DriveApp.getFolderById(getNamedValue(NamedRange.DriveRoot)).getFoldersByName(
-      this.department !== SaDepartment.Administrative
-        ? `${NamingConvention.DepartmentFolderPrefix}${this.department}`
-        : `${NamingConvention.AdministrativeFolderPrefix}${this.department}`,
-    );
-
-    if (!departmentFolderIt.hasNext()) {
-      throw new ReferenceError("The Drive's root was not found.");
+    if (!this.departmentFolder) {
+      throw new ReferenceError("The Drive's root or the department's folder was not found.");
     }
 
-    const departmentFolder = departmentFolderIt.next();
-    const projectFolderIt = departmentFolder.getFoldersByName(this.name);
-    const projectFolder = projectFolderIt.hasNext() ? projectFolderIt.next() : departmentFolder.createFolder(this.name);
+    const projectFolderIt = this.departmentFolder.getFoldersByName(this.name);
+    const projectFolder = projectFolderIt.hasNext() ? projectFolderIt.next() : this.departmentFolder.createFolder(this.name);
     const templatesFolders = DriveApp.getFolderById(getNamedValue(NamedRange.ProjectCreationTemplatesFolderId)).getFolders();
 
     this.folder = projectFolder.createFolder(this.edition);
@@ -158,11 +160,10 @@ export class Project {
       return fileIterator.next().setName(openingDocName);
     }
 
-    const openingDoc = openingDocTemplate.makeCopy(openingDocName, tmpDir);
+    this.openingDoc = openingDocTemplate.makeCopy(openingDocName, tmpDir);
+    substituteVariables(this.openingDoc, this.templateVariables);
 
-    substituteVariables(openingDoc, this.templateVariables);
-
-    return openingDoc;
+    return this.openingDoc;
   }
 
   private processStringTemplate(name: string, templateVariables = this.templateVariables): string {
