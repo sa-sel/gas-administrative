@@ -64,7 +64,7 @@ export class Project {
   setMembers(members?: MemberModel[]): Project {
     if (members) {
       this.manager && !members.some(m => m.nUsp === this.manager.nUsp) && members.push(this.manager);
-      this.manager && !members.some(m => m.nUsp === this.manager.nUsp) && members.push(this.manager);
+      this.director && !members.some(m => m.nUsp === this.director.nUsp) && members.push(this.director);
       this.members = members;
     }
 

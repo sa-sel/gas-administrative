@@ -1,5 +1,5 @@
+import { toString } from '@lib';
 import { MemberModel } from '@models';
-import { toString } from '@sa-sel/lib';
 import { hrSheets } from '../constants';
 
 export const parseRowToMember = (row: any[]): MemberModel => ({
