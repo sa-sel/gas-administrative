@@ -2,6 +2,7 @@ import { babel } from '@rollup/plugin-babel';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
 import { resolve } from 'path';
 import typescript from 'rollup-plugin-typescript2';
+import html from 'rollup-plugin-html';
 
 const extensions = ['.ts', '.js'];
 
@@ -11,10 +12,16 @@ const preventTreeShakingPlugin = {
 };
 
 const isGithub = process.env.ENV === 'GITHUB';
-const minified = {
+const minifiedJs = {
   comments: false,
   compact: true,
   minified: true,
+};
+const minifiedHtml = {
+  collapseWhitespace: true,
+  collapseBooleanAttributes: true,
+  conservativeCollapse: true,
+  minifyJS: true,
 };
 
 /** @type {import('rollup').RollupOptions} */
@@ -24,6 +31,10 @@ const config = {
   plugins: [
     preventTreeShakingPlugin,
     nodeResolve({ extensions }),
+    html({
+      include: ['./src/views/*.html', './.build/views/*.html'],
+      ...(isGithub ? minifiedHtml : {}),
+    }),
     typescript(),
     babel({
       extensions,
@@ -31,7 +42,7 @@ const config = {
       include: resolve('.build', 'src', '**', '*.ts'),
       exclude: ['node_modules/**'],
       configFile: './.babelrc.js',
-      ...(isGithub ? minified : {}),
+      ...(isGithub ? minifiedJs : {}),
     }),
   ],
 };
