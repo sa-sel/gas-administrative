@@ -36,7 +36,7 @@ export class Project {
 
   /** Create project by reading data from the spreadsheet. */
   static spreadsheetFactory(): Project {
-    return new this(getNamedValue(NamedRange.ProjectName), getNamedValue(NamedRange.ProjectDepartment) as SaDepartment)
+    return new this(getNamedValue(NamedRange.ProjectName).trim(), getNamedValue(NamedRange.ProjectDepartment).trim() as SaDepartment)
       .setEdition(getNamedValue(NamedRange.ProjectEdition))
       .setManager(getMemberData(getNamedValue(NamedRange.ProjectManager)?.split(' - ')[1]));
   }

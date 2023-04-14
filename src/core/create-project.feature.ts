@@ -5,6 +5,7 @@ import { Logger, SafeWrapper } from '@lib/classes';
 import { MemberModel } from '@models';
 import { Project } from '@utils/classes';
 import { NamedRange } from '@utils/constants';
+import { upsertProject } from '@utils/functions';
 
 const dialogBody = `
 Você tem certeza que deseja continuar com essa ação? Ela é irreversível e vai:
@@ -15,6 +16,10 @@ Você tem certeza que deseja continuar com essa ação? Ela é irreversível e v
 `;
 
 const actuallyCreateProject = (project: Project, logger: Logger) => {
+  if (upsertProject(project.name)) {
+    logger.log('Insert realizado!', `O projeto "${project.name}" foi salvo na lista de Projetos Existentes.`);
+  }
+
   const members: (MemberModel & ProjectMemberModel)[] = fetchData(GS.ss.getRangeByName(NamedRange.ProjectMembers), {
     filter: row => [project.director?.nUsp, project.manager?.nUsp].includes(row[2]) || (row[2] && row[4]),
     map: row => {

@@ -1,5 +1,6 @@
 import { DialogTitle, Logger, SafeWrapper, alert } from '@lib';
 import { Project } from '@utils/classes';
+import { upsertProject } from '@utils/functions';
 
 export const createProjectOpeningDoc = () =>
   SafeWrapper.factory(createProjectOpeningDoc.name).wrap((logger: Logger): void => {
@@ -15,6 +16,10 @@ export const createProjectOpeningDoc = () =>
 
     // check if the doc was just created or already existed
     if (doc.getDateCreated().valueOf() === doc.getLastUpdated().valueOf()) {
+      if (upsertProject(project.name)) {
+        logger.log('Insert realizado!', `O projeto "${project.name}" foi salvo na lista de Projetos Existentes.`);
+      }
+
       const body = `Documento de abertura do projeto "${project.name}" criado com sucesso. Acesse o link:\n${doc.getUrl()}`;
 
       logger.log(DialogTitle.Success, body, false);
