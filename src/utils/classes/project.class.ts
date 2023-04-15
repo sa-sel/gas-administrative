@@ -1,9 +1,9 @@
-import { getDirector, getMemberData } from '@hr/utils';
+import { getBoardOfDirectors, getDirector, getMemberData } from '@hr/utils';
 import { SaDepartment } from '@lib/constants';
 import { appendDataToSheet, copyInsides, exportToPdf, formatDate, getNamedValue, substituteVariables } from '@lib/functions';
 import { sendEmail } from '@lib/functions/email.util';
 import { File, Folder } from '@lib/models';
-import { MemberModel } from '@models';
+import { MemberModel, ProjectRelation } from '@models';
 import { NamedRange, NamingConvention, ProjectVariable } from '@utils/constants';
 import { getTmpFolder, memberToString } from '@utils/functions';
 
@@ -130,17 +130,17 @@ export class Project {
       membersSheetTemplate.getName().replaceAll(ProjectVariable.Name, this.name).replaceAll(ProjectVariable.Edition, this.edition),
       this.folder,
     );
+    const membersSheet = SpreadsheetApp.open(membersSheetFile).getSheets()[0];
+    const board = getBoardOfDirectors();
 
     // write members list to project members sheet
-    appendDataToSheet(
-      this.members,
-      SpreadsheetApp.open(membersSheetFile).getSheetByName(getNamedValue(NamedRange.ProjectMembersSpreadsheetTemplateSheetName)),
-      member => [member.name, member.nickname, member.email],
-    );
+    appendDataToSheet(this.members, membersSheet, m => [m.name, m.nickname, m.email, ProjectRelation.Project]);
+    // write directors list to project members sheet
+    appendDataToSheet(board, membersSheet, m => [m.name, m.nickname, m.email, ProjectRelation.BoardOfDirectors]);
 
     sendEmail({
       subject: `Abertura de Projeto - ${this.name} (${this.edition})`,
-      target: this.members.map(({ email }) => email),
+      target: [...this.members.map(({ email }) => email), ...board.map(({ email }) => email)],
       htmlBody: this.processStringTemplate(emailBodyHtml),
       attachments: this.openingDoc && [this.openingDoc],
     });
