@@ -1,11 +1,11 @@
 import { ProjectMemberModel, ProjectRole } from '@hr/models';
 import { HRGS, NamedRange, hrSheets } from '@hr/utils/constants';
 import { DialogTitle, addColsToSheet, appendDataToSheet } from '@lib';
-import { Logger } from '@lib/classes';
+import { SheetLogger } from '@lib/classes';
 
 /** Create a new project with its members.*/
 export const createProject = (name: string, members: ProjectMemberModel[]) => {
-  const logger = new Logger('createProject', HRGS.ss);
+  const logger = new SheetLogger('createProject', HRGS.ss);
   const newColData = [[name, undefined]];
 
   logger.log(DialogTitle.InProgress, `Criação do projeto "${name}", disparada na planilha do administrativo.`, false);

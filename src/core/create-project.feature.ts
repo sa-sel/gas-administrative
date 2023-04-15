@@ -1,7 +1,7 @@
 import { ProjectMemberModel, ProjectRole } from '@hr/models';
 import { createProject as hrSheetSaveProject } from '@hr/utils';
 import { DialogTitle, DiscordEmbed, GS, confirm, fetchData, getNamedValue, institutionalEmails, toString } from '@lib';
-import { DiscordWebhook, Logger, SafeWrapper } from '@lib/classes';
+import { DiscordWebhook, SafeWrapper, SheetLogger } from '@lib/classes';
 import { MemberModel } from '@models';
 import { Project } from '@utils/classes';
 import { NamedRange } from '@utils/constants';
@@ -44,7 +44,7 @@ const buildProjectDiscordEmbeds = (project: Project): DiscordEmbed[] => {
   ];
 };
 
-const actuallyCreateProject = (project: Project, logger: Logger) => {
+const actuallyCreateProject = (project: Project, logger: SheetLogger) => {
   if (upsertProject(project.name)) {
     logger.log('Insert realizado!', `O projeto "${project.name}" foi salvo na lista de Projetos Existentes.`);
   }
@@ -111,7 +111,7 @@ const actuallyCreateProject = (project: Project, logger: Logger) => {
 };
 
 export const createProject = () =>
-  SafeWrapper.factory(createProject.name, institutionalEmails).wrap((logger: Logger): void => {
+  SafeWrapper.factory(createProject.name, institutionalEmails).wrap((logger: SheetLogger): void => {
     const project = Project.spreadsheetFactory();
 
     if (!project.name || !project.edition || !project.manager || !project.department) {
