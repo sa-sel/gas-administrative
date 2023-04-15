@@ -1,7 +1,7 @@
 import { GS } from '@lib/constants';
 
 export const enum SheetName {
-  Docs = 'Documentação',
+  Params = 'Parâmetros',
   Logs = 'Logs',
   Minutes = 'Ata',
   ProjectDashboard = 'Controle de Projeto',
@@ -9,7 +9,7 @@ export const enum SheetName {
 }
 
 export const sheets = {
-  docs: GS.ss.getSheetByName(SheetName.Docs),
+  params: GS.ss.getSheetByName(SheetName.Params),
   logs: GS.ss.getSheetByName(SheetName.Logs),
   minutes: GS.ss.getSheetByName(SheetName.Minutes),
   projectDashboard: GS.ss.getSheetByName(SheetName.ProjectDashboard),

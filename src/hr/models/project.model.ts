@@ -1,10 +1,10 @@
 import { StudentBasicModel } from '@lib';
 
 export const enum ProjectRole {
-  Coordinator = 'Coordenador',
-  Director = 'Diretor',
-  Manager = 'Gerente',
-  Member = 'Membro',
+  Coordinator = 'Coordenação',
+  Director = 'Direção',
+  Manager = 'Gerência',
+  Member = 'Equipe',
 }
 
 export type ProjectMemberModel = StudentBasicModel & { role: ProjectRole };

@@ -7,6 +7,7 @@ export const parseRowToMember = (row: any[]): MemberModel => ({
   nickname: toString(row[1]),
   nUsp: toString(row[2]),
   email: toString(row[5]),
+  phone: toString(row[3]),
 });
 
 export const getMemberData = (nusp: string): MemberModel => {

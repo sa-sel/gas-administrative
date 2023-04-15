@@ -1,10 +1,14 @@
 import { ProjectRole } from '@hr/models';
 import { hrSheets } from '@hr/utils/constants';
-import { manageDataInSheets, SaDepartment, SaDepartmentAbbreviations, StudentBasicModel } from '@lib';
+import { manageDataInSheets, SaDepartment, SaDepartmentAbbreviations } from '@lib';
+import { MemberModel } from '@models';
+import { getMemberData } from './member.util';
 
-export const getDirector = (department: SaDepartment): StudentBasicModel | null => {
-  let director: StudentBasicModel = null;
+export const getDirector = (department: SaDepartment): MemberModel | null => {
+  let nusp: string;
+  let director: MemberModel;
 
+  // get nusps
   manageDataInSheets(SaDepartmentAbbreviations[department] ?? department, [hrSheets.projectMemberships], cell => {
     const col = cell.getColumn();
     const sheet = cell.getSheet();
@@ -15,12 +19,21 @@ export const getDirector = (department: SaDepartment): StudentBasicModel | null 
       const directorCell = departmentCol.createTextFinder(ProjectRole.Director).findNext();
 
       if (directorCell) {
-        const data: string[] = sheet.getRange(directorCell.getRow(), 1, 1, 3).getValues().flat();
+        const data: string[] = sheet.getRange(directorCell.getRow(), 3, 1, 1).getValues().flat();
 
-        director = { name: data[0], nickname: data[1], nUsp: data[2] };
+        nusp = data[0];
       }
     }
   });
+
+  // get member data
+  try {
+    director = getMemberData(nusp);
+  } catch (err) {
+    if (!(err instanceof RangeError)) {
+      throw err;
+    }
+  }
 
   return director;
 };
