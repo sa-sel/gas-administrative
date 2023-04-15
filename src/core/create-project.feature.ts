@@ -15,30 +15,34 @@ Você tem certeza que deseja continuar com essa ação? Ela é irreversível e v
   - Enviar o documento de abertura e o link da pasta do projeto por email para os membros do projeto e no Discord da SA-SEL.
 `;
 
-const buildProjectDiscordEmbeds = (project: Project): DiscordEmbed[] => [
-  {
-    title: 'Abertura de Projeto',
-    url: project.folder.getUrl(),
-    timestamp: project.start.toISOString(),
+const buildProjectDiscordEmbeds = (project: Project): DiscordEmbed[] => {
+  const fields: DiscordEmbed['fields'] = [
+    { name: 'Nome', value: project.name, inline: true },
+    { name: 'Edição', value: project.edition, inline: true },
+  ];
 
-    fields: [
-      { name: 'Nome', value: project.name, inline: true },
-      { name: 'Edição', value: project.edition, inline: true },
-      project.openingDoc && { name: 'Documento de Abertura', value: project.openingDoc.getUrl() },
-      (project.director || project.manager) && { name: '', value: '' },
-      project.director && { name: 'Direção', value: memberToString(project.director), inline: true },
-      project.manager && { name: 'Gerência', value: memberToString(project.manager), inline: true },
-      project.members.length && {
-        name: `Equipe (${project.members.length})`,
-        value: project.members.map(memberToString).join(', '),
+  fields.pushIf(project.openingDoc, { name: 'Documento de Abertura', value: project.openingDoc?.getUrl() });
+  fields.pushIf(project.director || project.manager, { name: '', value: '' });
+  fields.pushIf(project.director, { name: 'Direção', value: memberToString(project.director), inline: true });
+  fields.pushIf(project.manager, { name: 'Gerência', value: memberToString(project.manager), inline: true });
+  fields.pushIf(project.members.length, {
+    name: `Equipe (${project.members.length})`,
+    value: project.members.map(memberToString).join(', '),
+  });
+
+  return [
+    {
+      title: 'Abertura de Projeto',
+      url: project.folder.getUrl(),
+      timestamp: project.start.toISOString(),
+      fields,
+      author: {
+        name: project.fullDepartmentName,
+        url: project.departmentFolder?.getUrl(),
       },
-    ],
-    author: {
-      name: project.fullDepartmentName,
-      url: project.departmentFolder?.getUrl(),
     },
-  },
-];
+  ];
+};
 
 const actuallyCreateProject = (project: Project, logger: Logger) => {
   if (upsertProject(project.name)) {
@@ -101,7 +105,7 @@ const actuallyCreateProject = (project: Project, logger: Logger) => {
       'Olá Diretoria:tm: , tudo bem?\n' +
       `Vocês acabaram de abrir o projeto **${project.name}** e aqui estão suas informações.\n\n` +
       `OBS: ${project.director?.nickname || project.director?.name || project.fullDepartmentName}, ` +
-      `não esquece de criar o canal do projeto aqui no Discord: **${discordChannel}**.`,
+      `não esquece de criar o canal do projeto aqui no Discord: **#${discordChannel}**.`,
     embeds,
   });
 };

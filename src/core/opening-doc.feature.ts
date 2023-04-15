@@ -3,25 +3,29 @@ import { Project } from '@utils/classes';
 import { NamedRange } from '@utils/constants';
 import { memberToString, upsertProject } from '@utils/functions';
 
-const buildProjectDiscordEmbeds = (project: Project): DiscordEmbed[] => [
-  {
-    title: 'Documento de Abertura',
-    url: project.openingDoc.getUrl(),
-    timestamp: project.start.toISOString(),
+const buildProjectDiscordEmbeds = (project: Project): DiscordEmbed[] => {
+  const fields: DiscordEmbed['fields'] = [
+    { name: 'Nome', value: project.name, inline: true },
+    { name: 'Edição', value: project.edition, inline: true },
+  ];
 
-    fields: [
-      { name: 'Nome', value: project.name, inline: true },
-      { name: 'Edição', value: project.edition, inline: true },
-      (project.director || project.manager) && { name: '', value: '' },
-      project.director && { name: 'Direção', value: memberToString(project.director), inline: true },
-      project.manager && { name: 'Gerência', value: memberToString(project.manager), inline: true },
-    ],
-    author: {
-      name: project.fullDepartmentName,
-      url: project.departmentFolder?.getUrl(),
+  fields.pushIf(project.director || project.manager, { name: '', value: '' });
+  fields.pushIf(project.director, { name: 'Direção', value: memberToString(project.director), inline: true });
+  fields.pushIf(project.manager, { name: 'Gerência', value: memberToString(project.manager), inline: true });
+
+  return [
+    {
+      title: 'Documento de Abertura',
+      url: project.openingDoc.getUrl(),
+      timestamp: project.start.toISOString(),
+      fields,
+      author: {
+        name: project.fullDepartmentName,
+        url: project.departmentFolder?.getUrl(),
+      },
     },
-  },
-];
+  ];
+};
 
 export const createProjectOpeningDoc = () =>
   SafeWrapper.factory(createProjectOpeningDoc.name).wrap((logger: Logger): void => {
