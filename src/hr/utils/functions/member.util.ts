@@ -2,12 +2,12 @@ import { toString } from '@lib';
 import { MemberModel } from '@models';
 import { hrSheets } from '../constants';
 
-export const parseRowToMember = (row: any[]): MemberModel => ({
+const parseRowToMember = (row: any[]): MemberModel => ({
   name: toString(row[0]),
-  nickname: toString(row[1]),
+  nickname: toString(row[1]) || undefined,
   nUsp: toString(row[2]),
-  email: toString(row[5]),
-  phone: toString(row[3]),
+  email: toString(row[5]) || undefined,
+  phone: toString(row[3]).asPhoneNumber() || undefined,
 });
 
 export const getMemberData = (nusp: string): MemberModel => {

@@ -5,7 +5,7 @@ import { sendEmail } from '@lib/functions/email.util';
 import { File, Folder } from '@lib/models';
 import { MemberModel, ProjectRelation } from '@models';
 import { NamedRange, NamingConvention, ProjectVariable } from '@utils/constants';
-import { getTmpFolder, memberToString } from '@utils/functions';
+import { getTmpFolder, memberToHtmlLi, memberToString } from '@utils/functions';
 
 // TODO: how to use "@views/" here?
 import emailBodyHtml from '../../../src/views/create-project.email.html';
@@ -181,11 +181,7 @@ export class Project {
       [ProjectVariable.Name]: this.name,
       [ProjectVariable.Start]: formatDate(this.start),
       [ProjectVariable.Members]: this.members.reduce((acc, cur) => `${acc}• ${memberToString(cur)}\n`, '') || ProjectVariable.Members,
-      [ProjectVariable.MembersHtmlList]:
-        this.members.reduce(
-          (acc, cur) => `${acc}<li><a href="mailto:${cur.email}" target="_blank">${memberToString(cur)}</a></li>\n`,
-          '',
-        ) || ProjectVariable.MembersHtmlList,
+      [ProjectVariable.MembersHtmlList]: this.members.reduce((a, c) => `${a}${memberToHtmlLi(c)}\n`, '') || ProjectVariable.MembersHtmlList,
       [ProjectVariable.FolderUrl]: this.folder?.getUrl() || ProjectVariable.FolderUrl,
     };
   }

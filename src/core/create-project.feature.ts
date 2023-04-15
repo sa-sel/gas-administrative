@@ -27,7 +27,7 @@ const buildProjectDiscordEmbeds = (project: Project): DiscordEmbed[] => {
   fields.pushIf(project.manager, { name: 'Gerência', value: memberToString(project.manager), inline: true });
   fields.pushIf(project.members.length, {
     name: `Equipe (${project.members.length})`,
-    value: project.members.map(memberToString).join(', '),
+    value: project.members.map(memberToString).toString(),
   });
 
   return [
@@ -50,14 +50,15 @@ const actuallyCreateProject = (project: Project, logger: SheetLogger) => {
   }
 
   const members: (MemberModel & ProjectMemberModel)[] = fetchData(GS.ss.getRangeByName(NamedRange.ProjectMembers), {
-    filter: row => [project.director?.nUsp, project.manager?.nUsp].includes(row[2]) || (row[2] && row[4]),
+    filter: row => [project.director?.nUsp, project.manager?.nUsp].includes(row[2]) || (row[2] && row[5]),
     map: row => {
       let role: ProjectRole;
       const member: MemberModel = {
         name: toString(row[0]),
-        nickname: toString(row[1]),
+        nickname: toString(row[1]) || undefined,
         nUsp: toString(row[2]),
-        email: toString(row[3]),
+        phone: toString(row[3]).asPhoneNumber() || undefined,
+        email: toString(row[4]) || undefined,
       };
 
       switch (member.nUsp) {
