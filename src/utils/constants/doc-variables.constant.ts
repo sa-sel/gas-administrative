@@ -4,6 +4,7 @@ export const enum DocVariable {
 
 export const enum ProjectVariable {
   Department = '{{projectDepartment}}',
+  FullDepartment = '{{projectFullDepartment}}',
   Edition = '{{projectEdition}}',
   Manager = '{{projectManager}}',
   ManagerEmail = '{{projectManagerEmail}}',

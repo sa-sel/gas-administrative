@@ -172,6 +172,7 @@ export class Project {
   private get templateVariables(): Record<ProjectVariable, string> {
     return {
       [ProjectVariable.Department]: this.department || ProjectVariable.Department,
+      [ProjectVariable.FullDepartment]: this.fullDepartmentName || ProjectVariable.FullDepartment,
       [ProjectVariable.Edition]: this.edition,
       [ProjectVariable.Manager]: this.manager ? memberToString(this.manager) : ProjectVariable.Manager,
       [ProjectVariable.Director]: this.director ? memberToString(this.director) : ProjectVariable.Director,

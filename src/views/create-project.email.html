@@ -1,19 +1,32 @@
-Olá, Acabou de ser aberto o projeto <strong>{{projectName}}</strong>, edição <strong>{{projectEdition}}</strong> e você é parte da equipe!
-Por favor, antes da primeira reunião dê uma lida no documento de abertura (segue em anexo) e nas informações a seguir sobre o projeto:
+<p>Olá,</p>
+
+<p>
+  Acaba de ser aberto o projeto <strong>{{projectName}}</strong>, edição <strong>{{projectEdition}}</strong> e você é parte da equipe (e/ou
+  da Diretoria)!
+  <br />
+  Por favor, antes da primeira reunião dê uma lida no documento de abertura (segue em anexo) e nas informações a seguir sobre o projeto:
+</p>
 
 <ul>
-  <li>Diretoria: {{projectDepartment}}</li>
-  <li>Diretor: <a href="mailto:{{projectDirectorEmail}}">{{projectDirector}}</a></li>
-  <li>Gerente: <a href="mailto:{{projectManagerEmail}}">{{projectManager}}</a></li>
+  <li>Área: {{projectFullDepartment}}</li>
+  <li>Direção: <a href="mailto:{{projectDirectorEmail}}">{{projectDirector}}</a></li>
+  <li>Gerência: <a href="mailto:{{projectManagerEmail}}">{{projectManager}}</a></li>
   <li>
-    Pasta no Drive: <a href="{{projectFolderUrl}}" target="_blank">SA-SEL / {{projectDepartment}} / {{projectName}} / {{projectEdition}}</a>
+    Pasta no Drive:
+    <a href="{{projectFolderUrl}}" target="_blank">SA-SEL / {{projectFullDepartment}} / {{projectName}} / {{projectEdition}}</a>
   </li>
   <li>
-    Membros:
+    Equipe:
     <ul>
       {{projectMembersHtmlList}}
     </ul>
   </li>
 </ul>
 
-Contamos com a sua participação no projeto! Att., SA-SEL
+<p>Contamos com o seu apoio no projeto!</p>
+
+<p>
+Att.,
+<br />
+SA-SEL
+</p>

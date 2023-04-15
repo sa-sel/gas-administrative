@@ -29,7 +29,7 @@ const buildProjectDiscordEmbeds = (project: Project): DiscordEmbed[] => [
       project.director && { name: 'Direção', value: memberToString(project.director), inline: true },
       project.manager && { name: 'Gerência', value: memberToString(project.manager), inline: true },
       project.members.length && {
-        name: `Membros (total ${project.members.length})`,
+        name: `Equipe (${project.members.length})`,
         value: project.members.map(memberToString).join(', '),
       },
     ],
