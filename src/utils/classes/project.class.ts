@@ -4,8 +4,8 @@ import { appendDataToSheet, copyInsides, exportToPdf, formatDate, getNamedValue,
 import { sendEmail } from '@lib/functions/email.util';
 import { File, Folder } from '@lib/models';
 import { MemberModel, ProjectRelation } from '@models';
-import { NamedRange, NamingConvention, ProjectVariable } from '@utils/constants';
-import { getTmpFolder, memberToHtmlLi, memberToString } from '@utils/functions';
+import { NamedRange, ProjectVariable } from '@utils/constants';
+import { getOpeningDocTemplate, getTmpFolder, memberToHtmlLi, memberToString } from '@utils/functions';
 
 // TODO: how to use "@views/" here?
 import emailBodyHtml from '../../../src/views/create-project.email.html';
@@ -30,11 +30,7 @@ export class Project {
     this.start = new Date();
     this.members = [];
     this.director = getDirector(this.department);
-
-    this.fullDepartmentName =
-      this.department !== SaDepartment.Administrative
-        ? `${NamingConvention.DepartmentFolderPrefix}${this.department}`
-        : `${NamingConvention.AdministrativeFolderPrefix}${this.department}`;
+    this.fullDepartmentName = this.department === SaDepartment.Administrative ? this.department : `Diretoria de ${this.department}`;
 
     const departmentFolderIt = DriveApp.getFolderById(getNamedValue(NamedRange.DriveRoot))?.getFoldersByName(this.fullDepartmentName);
 
@@ -112,9 +108,7 @@ export class Project {
     }
 
     // export opening doc PDF to project folder
-    const openingDocIt = getTmpFolder().getFilesByName(
-      this.processStringTemplate(NamingConvention.OpeningDocTemplanteName, templateVariables),
-    );
+    const openingDocIt = getTmpFolder().getFilesByName(this.processStringTemplate(getOpeningDocTemplate().getName(), templateVariables));
 
     if (openingDocIt.hasNext()) {
       const openingDocTmp = openingDocIt.next();
@@ -150,9 +144,9 @@ export class Project {
 
   /** Create the opening doc or just return it if it already exists (also force set last updated date). */
   createOrGetOpeningDoc(): File {
-    const openingDocTemplate = DriveApp.getFileById(getNamedValue(NamedRange.ProjectOpeningDocId));
+    const openingDocTemplate = getOpeningDocTemplate();
     const tmpDir = getTmpFolder();
-    const openingDocName = this.processStringTemplate(NamingConvention.OpeningDocTemplanteName);
+    const openingDocName = this.processStringTemplate(openingDocTemplate.getName());
     const fileIterator = tmpDir.getFilesByName(openingDocName);
 
     if (fileIterator.hasNext()) {
