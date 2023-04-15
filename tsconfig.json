@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "typeRoots": ["./.types", "./node_modules/@types"],
     "experimentalDecorators": true,
     "forceConsistentCasingInFileNames": true,
     "importHelpers": true,

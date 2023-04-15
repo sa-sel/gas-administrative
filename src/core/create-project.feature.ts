@@ -1,19 +1,44 @@
 import { ProjectMemberModel, ProjectRole } from '@hr/models';
 import { createProject as hrSheetSaveProject } from '@hr/utils';
-import { DialogTitle, GS, confirm, fetchData, institutionalEmails, toString } from '@lib';
-import { Logger, SafeWrapper } from '@lib/classes';
+import { DialogTitle, DiscordEmbed, GS, confirm, fetchData, getNamedValue, institutionalEmails, toString } from '@lib';
+import { DiscordWebhook, Logger, SafeWrapper } from '@lib/classes';
 import { MemberModel } from '@models';
 import { Project } from '@utils/classes';
 import { NamedRange } from '@utils/constants';
-import { upsertProject } from '@utils/functions';
+import { memberToString, upsertProject } from '@utils/functions';
 
 const dialogBody = `
 Você tem certeza que deseja continuar com essa ação? Ela é irreversível e vai:
   - Criar a pasta do projeto no Drive da SA-SEL;
   - Salvar o documento de abertura do projeto em sua pasta no Drive;
   - Salvar os membros selecionados na pasta do projeto e em seu documento de abertura;
-  - Enviar o documento de abertura e o link da pasta do projeto por email para os membros do projeto.
+  - Enviar o documento de abertura e o link da pasta do projeto por email para os membros do projeto e no Discord da SA-SEL.
 `;
+
+const buildProjectDiscordEmbeds = (project: Project): DiscordEmbed[] => [
+  {
+    title: 'Abertura de Projeto',
+    url: project.folder.getUrl(),
+    timestamp: project.start.toISOString(),
+
+    fields: [
+      { name: 'Nome', value: project.name, inline: true },
+      { name: 'Edição', value: project.edition, inline: true },
+      project.openingDoc && { name: 'Documento de Abertura', value: project.openingDoc.getUrl() },
+      (project.director || project.manager) && { name: '', value: '' },
+      project.director && { name: 'Direção', value: memberToString(project.director), inline: true },
+      project.manager && { name: 'Gerência', value: memberToString(project.manager), inline: true },
+      project.members.length && {
+        name: `Membros (total ${project.members.length})`,
+        value: project.members.map(memberToString).join(', '),
+      },
+    ],
+    author: {
+      name: project.fullDepartmentName,
+      url: project.departmentFolder?.getUrl(),
+    },
+  },
+];
 
 const actuallyCreateProject = (project: Project, logger: Logger) => {
   if (upsertProject(project.name)) {
@@ -60,6 +85,25 @@ const actuallyCreateProject = (project: Project, logger: Logger) => {
   const dir = project.setMembers(members).createFolder();
 
   logger.log(`${DialogTitle.Success}`, `Pasta no Drive criada: ${dir.getName()} (${dir.getUrl()})`);
+
+  const boardWebhook = new DiscordWebhook(getNamedValue(NamedRange.WebhookBoardOfDirectors));
+  const generalWebhook = new DiscordWebhook(getNamedValue(NamedRange.WebhookGeneral));
+  const embeds: DiscordEmbed[] = buildProjectDiscordEmbeds(project);
+  const discordChannel = project.name
+    .toLowerCase()
+    .replaceAll(' ', '-')
+    .removeAccents()
+    .replace(/[^\w\d-]/g, '');
+
+  generalWebhook.post({ embeds });
+  boardWebhook.post({
+    content:
+      'Olá Diretoria:tm: , tudo bem?\n' +
+      `Vocês acabaram de abrir o projeto **${project.name}** e aqui estão suas informações.\n\n` +
+      `OBS: ${project.director?.nickname || project.director?.name || project.fullDepartmentName}, ` +
+      `não esquece de criar o canal do projeto aqui no Discord: **${discordChannel}**.`,
+    embeds,
+  });
 };
 
 export const createProject = () =>

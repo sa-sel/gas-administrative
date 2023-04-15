@@ -112,23 +112,22 @@ export class Project {
     }
 
     // export opening doc PDF to project folder
-    let openingDocPdf: File;
     const openingDocIt = getTmpFolder().getFilesByName(
       this.processStringTemplate(NamingConvention.OpeningDocTemplanteName, templateVariables),
     );
 
     if (openingDocIt.hasNext()) {
-      const openingDoc = openingDocIt.next();
+      const openingDocTmp = openingDocIt.next();
 
-      substituteVariables(openingDoc, templateVariables);
-      openingDocPdf = exportToPdf(openingDoc).moveTo(this.folder);
-      openingDoc.setTrashed(true);
+      substituteVariables(openingDocTmp, templateVariables);
+      this.openingDoc = exportToPdf(openingDocTmp).moveTo(this.folder);
+      openingDocTmp.setTrashed(true);
     }
 
     // copy project team spreadsheet template to project folder
     const membersSheetTemplate = DriveApp.getFileById(getNamedValue(NamedRange.ProjectMembersSpreadsheetTemplateId));
     const membersSheetFile = membersSheetTemplate.makeCopy(
-      membersSheetTemplate.getName().replace(ProjectVariable.Name, this.name).replace(ProjectVariable.Edition, this.edition),
+      membersSheetTemplate.getName().replaceAll(ProjectVariable.Name, this.name).replaceAll(ProjectVariable.Edition, this.edition),
       this.folder,
     );
 
@@ -143,7 +142,7 @@ export class Project {
       subject: `Abertura de Projeto - ${this.name} (${this.edition})`,
       target: this.members.map(({ email }) => email),
       htmlBody: this.processStringTemplate(emailBodyHtml),
-      attachments: openingDocPdf && [openingDocPdf],
+      attachments: this.openingDoc && [this.openingDoc],
     });
 
     return this.folder;
@@ -166,8 +165,8 @@ export class Project {
     return this.openingDoc;
   }
 
-  private processStringTemplate(name: string, templateVariables = this.templateVariables): string {
-    return Object.entries(templateVariables).reduce((title, [variable, value]) => title.replace(variable, value), name);
+  private processStringTemplate(str: string, templateVariables = this.templateVariables): string {
+    return Object.entries(templateVariables).reduce((result, [variable, value]) => result.replaceAll(variable, value), str);
   }
 
   private get templateVariables(): Record<ProjectVariable, string> {
