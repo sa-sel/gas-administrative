@@ -1,3 +1,4 @@
+import { getBoardOfDirectors } from '@hr/utils';
 import { DialogTitle, DiscordEmbed, DiscordWebhook, Logger, SafeWrapper, alert, getNamedValue } from '@lib';
 import { Project } from '@utils/classes';
 import { NamedRange } from '@utils/constants';
@@ -28,7 +29,7 @@ const buildProjectDiscordEmbeds = (project: Project): DiscordEmbed[] => {
 };
 
 export const createProjectOpeningDoc = () =>
-  SafeWrapper.factory(createProjectOpeningDoc.name).wrap((logger: Logger): void => {
+  SafeWrapper.factory(createProjectOpeningDoc.name, () => getBoardOfDirectors().map(({ email }) => email)).wrap((logger: Logger): void => {
     const project = Project.spreadsheetFactory();
 
     if (!project.name || !project.edition || !project.department) {

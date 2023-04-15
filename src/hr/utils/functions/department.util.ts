@@ -37,3 +37,32 @@ export const getDirector = (department: SaDepartment): MemberModel | null => {
 
   return director;
 };
+
+export const getBoardOfDirectors = (): MemberModel[] => {
+  const directorNusps: Set<string> = new Set();
+
+  // get nusps
+  manageDataInSheets(ProjectRole.Director, [hrSheets.projectMemberships], cell => {
+    const row = cell.getRow();
+    const sheet = cell.getSheet();
+
+    if (row > sheet.getFrozenRows() && cell.getColumn() > sheet.getFrozenColumns()) {
+      const data: string[] = sheet.getRange(row, 3, 1, 1).getValues().flat();
+
+      directorNusps.add(data[0]);
+    }
+  });
+
+  // get member data
+  return Array.from(directorNusps).reduce((board, nusp) => {
+    try {
+      board.push(getMemberData(nusp));
+    } catch (err) {
+      if (!(err instanceof RangeError)) {
+        throw err;
+      }
+    }
+
+    return board;
+  }, []);
+};
