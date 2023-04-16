@@ -16,5 +16,9 @@ export const enum NamedRange {
   ProjectMembers = 'ProjectMembers',
   ProjectName = 'ProjectName',
 
+  MinutesAdminTemplate = 'MinutesAdminTemplate',
+  MinutesProjectTemplate = 'MinutesAdminTemplate',
+  MinutesAdminRepository = 'MinutesAdminRepository',
+
   SheetIdHR = 'MemberControlSpreadsheetId',
 }

@@ -1,10 +1,10 @@
 import { getBoardOfDirectors, getDirector, getMemberData } from '@hr/utils';
 import { SaDepartment } from '@lib/constants';
-import { appendDataToSheet, copyInsides, exportToPdf, formatDate, getNamedValue, substituteVariables } from '@lib/functions';
+import { appendDataToSheet, copyInsides, exportToPdf, getNamedValue, substituteVariables } from '@lib/functions';
 import { sendEmail } from '@lib/functions/email.util';
 import { File, Folder } from '@lib/models';
-import { MemberModel, ProjectRelation } from '@models';
-import { NamedRange, ProjectVariable } from '@utils/constants';
+import { MemberModel } from '@models';
+import { GeneralVariable, NamedRange, ProjectVariable } from '@utils/constants';
 import { getOpeningDocTemplate, getTmpFolder, memberToHtmlLi, memberToString } from '@utils/functions';
 
 // TODO: how to use "@views/" here?
@@ -118,19 +118,15 @@ export class Project {
       openingDocTmp.setTrashed(true);
     }
 
-    // copy project team spreadsheet template to project folder
-    const membersSheetTemplate = DriveApp.getFileById(getNamedValue(NamedRange.ProjectMembersSpreadsheetTemplateId));
-    const membersSheetFile = membersSheetTemplate.makeCopy(
-      membersSheetTemplate.getName().replaceAll(ProjectVariable.Name, this.name).replaceAll(ProjectVariable.Edition, this.edition),
-      this.folder,
-    );
-    const membersSheet = SpreadsheetApp.open(membersSheetFile).getSheets()[0];
     const board = getBoardOfDirectors();
 
-    // write members list to project members sheet
-    appendDataToSheet(this.members, membersSheet, m => [m.name, m.nickname, m.email, ProjectRelation.Project]);
-    // write directors list to project members sheet
-    appendDataToSheet(board, membersSheet, m => [m.name, m.nickname, m.email, ProjectRelation.BoardOfDirectors]);
+    this.setupProjectControlSpreadsheet(
+      {
+        ...templateVariables,
+        [GeneralVariable.MinutesTemplate]: getNamedValue(NamedRange.MinutesProjectTemplate),
+      },
+      board,
+    );
 
     sendEmail({
       subject: `Abertura de Projeto - ${this.name} (${this.edition})`,
@@ -159,6 +155,26 @@ export class Project {
     return this.openingDoc;
   }
 
+  private setupProjectControlSpreadsheet(templateVariables: Record<string, string>, boardOfDirectors: MemberModel[]): void {
+    if (!this.folder) {
+      return;
+    }
+
+    // copy project control spreadsheet template to project folder
+    const membersSheetTemplate = DriveApp.getFileById(getNamedValue(NamedRange.ProjectMembersSpreadsheetTemplateId));
+    const projectControlSheetFile = membersSheetTemplate.makeCopy(this.processStringTemplate(membersSheetTemplate.getName()), this.folder);
+
+    // substitutes variables in project control spreadsheet
+    substituteVariables(projectControlSheetFile, templateVariables);
+
+    const [membersSheet, boardOfDirectorsSheet] = SpreadsheetApp.open(projectControlSheetFile).getSheets();
+
+    // write members list to project control sheet
+    appendDataToSheet(this.members, membersSheet, m => [undefined, m.name, m.nickname, m.email, undefined, undefined]);
+    // write directors list to project control sheet
+    appendDataToSheet(boardOfDirectors, boardOfDirectorsSheet, m => [m.name, m.nickname, m.email]);
+  }
+
   private processStringTemplate(str: string, templateVariables = this.templateVariables): string {
     return Object.entries(templateVariables).reduce((result, [variable, value]) => result.replaceAll(variable, value), str);
   }
@@ -173,7 +189,8 @@ export class Project {
       [ProjectVariable.ManagerEmail]: this.manager?.email || ProjectVariable.ManagerEmail,
       [ProjectVariable.DirectorEmail]: this.director?.email || ProjectVariable.DirectorEmail,
       [ProjectVariable.Name]: this.name,
-      [ProjectVariable.Start]: formatDate(this.start),
+      [ProjectVariable.Start]: this.start.asDateString(),
+      [ProjectVariable.NumMembers]: this.members.length.toString() || ProjectVariable.NumMembers,
       [ProjectVariable.Members]: this.members.reduce((acc, cur) => `${acc}• ${memberToString(cur)}\n`, '') || ProjectVariable.Members,
       [ProjectVariable.MembersHtmlList]: this.members.reduce((a, c) => `${a}${memberToHtmlLi(c)}\n`, '') || ProjectVariable.MembersHtmlList,
       [ProjectVariable.FolderUrl]: this.folder?.getUrl() || ProjectVariable.FolderUrl,
