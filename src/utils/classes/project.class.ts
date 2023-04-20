@@ -1,5 +1,5 @@
 import { getBoardOfDirectors, getDirector, getMemberData } from '@hr/utils';
-import { SaDepartment } from '@lib/constants';
+import { DialogTitle, GS, SaDepartment } from '@lib/constants';
 import { appendDataToSheet, copyInsides, exportToPdf, getNamedValue, substituteVariables } from '@lib/functions';
 import { sendEmail } from '@lib/functions/email.util';
 import { File, Folder } from '@lib/models';
@@ -9,8 +9,6 @@ import { getOpeningDocTemplate, getTmpFolder, memberToHtmlLi, memberToString } f
 
 // TODO: how to use "@views/" here?
 import emailBodyHtml from '../../../src/views/create-project.email.html';
-
-// TODO: add progress logs
 
 export class Project {
   private defaultEdition = `${new Date().getFullYear()}.${new Date().getMonth() > 5 ? 2 : 1}`;
@@ -80,6 +78,12 @@ export class Project {
     return this;
   }
 
+  // TODO:
+  // - lidar com os novos templates da Padrão
+  // - atualizar enums e variáveis na planilha do RH
+  // - scripts de ata de RD/RG (envio por email pra SA-SEL inteira + #general + #diretoria) -> salvar log na planilha do admin
+  // - script planilha de controle de projeto (criação de ata) -> salvar log na planilha de controle de projeto
+  // - script de projeto (envio por email pra projeto + diretoria + #diretoria + #projeto)
   createFolder(): Folder {
     if (!this.departmentFolder) {
       throw new ReferenceError("The Drive's root or the department's folder was not found.");
@@ -90,6 +94,7 @@ export class Project {
     const templatesFolders = DriveApp.getFolderById(getNamedValue(NamedRange.ProjectCreationTemplatesFolderId)).getFolders();
 
     this.folder = projectFolder.createFolder(this.edition);
+    GS.ss.toast('Pasta do projeto criada.\nCopiando templates e documentos...', DialogTitle.InProgress);
 
     const { templateVariables } = this;
 
@@ -106,6 +111,7 @@ export class Project {
         );
       }
     }
+    GS.ss.toast('Templates e documentos copiados para a pasta do projeto.', DialogTitle.InProgress);
 
     // export opening doc PDF to project folder
     const openingDocIt = getTmpFolder().getFilesByName(this.processStringTemplate(getOpeningDocTemplate().getName(), templateVariables));
@@ -116,9 +122,14 @@ export class Project {
       substituteVariables(openingDocTmp, templateVariables);
       this.openingDoc = exportToPdf(openingDocTmp).moveTo(this.folder);
       openingDocTmp.setTrashed(true);
+
+      GS.ss.toast('PDF do documento de abertura exportado.', DialogTitle.InProgress);
+    } else {
+      GS.ss.toast('Não havia um documento de abertura para o projeto.', DialogTitle.InProgress);
     }
 
     const board = getBoardOfDirectors();
+    const target = [...this.members.map(({ email }) => email), ...board.map(({ email }) => email)];
 
     this.setupProjectControlSpreadsheet(
       {
@@ -127,13 +138,15 @@ export class Project {
       },
       board,
     );
+    GS.ss.toast('Planilha de controle de projeto criada.', DialogTitle.InProgress);
 
     sendEmail({
       subject: `Abertura de Projeto - ${this.name} (${this.edition})`,
-      target: [...this.members.map(({ email }) => email), ...board.map(({ email }) => email)],
+      target,
       htmlBody: this.processStringTemplate(emailBodyHtml),
       attachments: this.openingDoc && [this.openingDoc],
     });
+    GS.ss.toast(`Emails enviados para ${target.length} membros.`, DialogTitle.InProgress);
 
     return this.folder;
   }
