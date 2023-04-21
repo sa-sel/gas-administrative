@@ -54,6 +54,7 @@ In this file, you must specify the `SCRIPT_ID`[^1] to the project you're working
 The project has lots of dependencies, as listed in `package.json`. In order to install them, run:
 
 ```bash
+npm run submodules
 npm install
 ```
 
