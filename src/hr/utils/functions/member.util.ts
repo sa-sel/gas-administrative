@@ -1,16 +1,16 @@
-import { toString } from '@lib';
-import { MemberModel } from '@models';
+import { Student, toString } from '@lib';
 import { hrSheets } from '../constants';
 
-const parseRowToMember = (row: any[]): MemberModel => ({
-  name: toString(row[0]),
-  nickname: toString(row[1]) || undefined,
-  nUsp: toString(row[2]),
-  email: toString(row[5]) || undefined,
-  phone: toString(row[3]).asPhoneNumber() || undefined,
-});
+const parseRowToMember = (row: any[]): Student =>
+  new Student({
+    name: toString(row[0]),
+    nickname: toString(row[1]) || undefined,
+    nUsp: toString(row[2]),
+    email: toString(row[5]) || undefined,
+    phone: toString(row[3]).asPhoneNumber() || undefined,
+  });
 
-export const getMemberData = (nusp: string): MemberModel => {
+export const getMemberData = (nusp: string): Student => {
   const occurrences = hrSheets.mainData.createTextFinder(nusp).findAll();
 
   if (occurrences.length !== 1) {

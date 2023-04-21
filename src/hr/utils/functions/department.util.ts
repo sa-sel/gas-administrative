@@ -1,12 +1,11 @@
 import { ProjectRole } from '@hr/models';
 import { hrSheets } from '@hr/utils/constants';
-import { manageDataInSheets, SaDepartment, SaDepartmentAbbreviations } from '@lib';
-import { MemberModel } from '@models';
+import { manageDataInSheets, SaDepartment, SaDepartmentAbbreviations, Student } from '@lib';
 import { getMemberData } from './member.util';
 
-export const getDirector = (department: SaDepartment): MemberModel | null => {
+export const getDirector = (department: SaDepartment): Student | null => {
   let nusp: string;
-  let director: MemberModel;
+  let director: Student;
 
   // get nusps
   manageDataInSheets(SaDepartmentAbbreviations[department] ?? department, [hrSheets.projectMemberships], cell => {
@@ -38,7 +37,7 @@ export const getDirector = (department: SaDepartment): MemberModel | null => {
   return director;
 };
 
-export const getBoardOfDirectors = (): MemberModel[] => {
+export const getBoardOfDirectors = (): Student[] => {
   const directorNusps: Set<string> = new Set();
 
   // get nusps

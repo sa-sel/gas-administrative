@@ -61,10 +61,21 @@
         "default": [
           "decorated-field",
           "private-field",
+          "#private-field",
+          "protected-field",
           "public-field",
           "constructor",
+          "decorated-get",
+          "decorated-set",
           "decorated-method",
+          "public-get",
+          "public-set",
           "public-method",
+          "protected-method",
+          "protected-get",
+          "protected-set",
+          "private-get",
+          "private-set",
           "private-method"
         ]
       }

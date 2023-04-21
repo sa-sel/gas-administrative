@@ -2,7 +2,6 @@ import { getBoardOfDirectors } from '@hr/utils';
 import { DialogTitle, DiscordEmbed, DiscordWebhook, SafeWrapper, SheetLogger, alert, getNamedValue } from '@lib';
 import { Project } from '@utils/classes';
 import { NamedRange } from '@utils/constants';
-import { memberToString, upsertProject } from '@utils/functions';
 
 const buildProjectDiscordEmbeds = (project: Project): DiscordEmbed[] => {
   const fields: DiscordEmbed['fields'] = [
@@ -11,8 +10,8 @@ const buildProjectDiscordEmbeds = (project: Project): DiscordEmbed[] => {
   ];
 
   fields.pushIf(project.director || project.manager, { name: '', value: '' });
-  fields.pushIf(project.director, { name: 'Direção', value: memberToString(project.director), inline: true });
-  fields.pushIf(project.manager, { name: 'Gerência', value: memberToString(project.manager), inline: true });
+  fields.pushIf(project.director, { name: 'Direção', value: project.director.toString(), inline: true });
+  fields.pushIf(project.manager, { name: 'Gerência', value: project.manager.toString(), inline: true });
 
   return [
     {
@@ -47,7 +46,7 @@ export const createProjectOpeningDoc = () =>
 
       // check if the doc was just created or already existed
       if (doc.getDateCreated().valueOf() === doc.getLastUpdated().valueOf()) {
-        if (upsertProject(project.name)) {
+        if (project.upsert()) {
           logger.log('Insert realizado!', `O projeto "${project.name}" foi salvo na lista de Projetos Existentes.`);
         }
 

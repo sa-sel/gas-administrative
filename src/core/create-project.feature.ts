@@ -1,11 +1,9 @@
-import { ProjectMemberModel, ProjectRole } from '@hr/models';
-import { createProject as hrSheetSaveProject } from '@hr/utils';
+import { ProjectRole } from '@hr/models';
+import { ProjectMember, createProject as hrSheetSaveProject } from '@hr/utils';
 import { DialogTitle, DiscordEmbed, GS, confirm, fetchData, getNamedValue, institutionalEmails, toString } from '@lib';
 import { DiscordWebhook, SafeWrapper, SheetLogger } from '@lib/classes';
-import { MemberModel } from '@models';
 import { Project } from '@utils/classes';
 import { NamedRange } from '@utils/constants';
-import { memberToString, upsertProject } from '@utils/functions';
 
 const dialogBody = `
 Você tem certeza que deseja continuar com essa ação? Ela é irreversível e vai:
@@ -23,11 +21,11 @@ const buildProjectDiscordEmbeds = (project: Project): DiscordEmbed[] => {
 
   fields.pushIf(project.openingDoc, { name: 'Documento de Abertura', value: project.openingDoc?.getUrl() });
   fields.pushIf(project.director || project.manager, { name: '', value: '' });
-  fields.pushIf(project.director, { name: 'Direção', value: memberToString(project.director), inline: true });
-  fields.pushIf(project.manager, { name: 'Gerência', value: memberToString(project.manager), inline: true });
+  fields.pushIf(project.director, { name: 'Direção', value: project.director.toString(), inline: true });
+  fields.pushIf(project.manager, { name: 'Gerência', value: project.manager.toString(), inline: true });
   fields.pushIf(project.members.length, {
     name: `Equipe (${project.members.length})`,
-    value: project.members.map(memberToString).toString(),
+    value: project.members.toString(),
   });
 
   return [
@@ -45,46 +43,34 @@ const buildProjectDiscordEmbeds = (project: Project): DiscordEmbed[] => {
 };
 
 const actuallyCreateProject = (project: Project, logger: SheetLogger) => {
-  if (upsertProject(project.name)) {
+  if (project.upsert()) {
     logger.log('Insert realizado!', `O projeto "${project.name}" foi salvo na lista de Projetos Existentes.`);
   }
 
-  const members: (MemberModel & ProjectMemberModel)[] = fetchData(GS.ss.getRangeByName(NamedRange.ProjectMembers), {
+  const members: ProjectMember[] = fetchData(GS.ss.getRangeByName(NamedRange.ProjectMembers), {
     filter: row => [project.director?.nUsp, project.manager?.nUsp].includes(row[2]) || (row[2] && row[5]),
     map: row => {
-      let role: ProjectRole;
-      const member: MemberModel = {
+      const member = new ProjectMember({
         name: toString(row[0]),
         nickname: toString(row[1]) || undefined,
         nUsp: toString(row[2]),
         phone: toString(row[3]).asPhoneNumber() || undefined,
         email: toString(row[4]) || undefined,
-      };
+      });
 
-      switch (member.nUsp) {
-        case project.director?.nUsp: {
-          role = ProjectRole.Director;
-          break;
-        }
-
-        case project.manager?.nUsp: {
-          role = ProjectRole.Manager;
-          break;
-        }
-
-        default: {
-          role = ProjectRole.Member;
-          break;
-        }
+      if (member.nUsp === project.director?.nUsp) {
+        member.role = ProjectRole.Director;
+      } else if (member.nUsp === project.manager?.nUsp) {
+        member.role = ProjectRole.Manager;
       }
 
-      return { ...member, role };
+      return member;
     },
   });
 
   logger.log(DialogTitle.InProgress, `Projeto "${project.name}" possui ${members.length} membros.`);
 
-  hrSheetSaveProject(`${project.name} (${project.edition})`, members);
+  hrSheetSaveProject(project.toString(), members);
   logger.log(`${DialogTitle.Success}`, `Projeto ${project.name} salvo na planilha do RH.`);
 
   const dir = project.setMembers(members).createFolder();
@@ -122,7 +108,7 @@ export const createProject = () =>
     logger.log(DialogTitle.InProgress, `Execução iniciada para projeto "${project.name}".`);
     confirm(
       {
-        title: `Abertura de Projeto: ${project.name} (${project.edition})`,
+        title: `Abertura de Projeto: ${project.toString()}`,
         body: dialogBody,
       },
       () => actuallyCreateProject(project, logger),

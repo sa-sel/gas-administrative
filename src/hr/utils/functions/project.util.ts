@@ -1,10 +1,11 @@
-import { ProjectMemberModel, ProjectRole } from '@hr/models';
+import { ProjectRole } from '@hr/models';
 import { HRGS, NamedRange, hrSheets } from '@hr/utils/constants';
 import { DialogTitle, addColsToSheet, appendDataToSheet } from '@lib';
 import { SheetLogger } from '@lib/classes';
+import { ProjectMember } from '../classes';
 
 /** Create a new project with its members.*/
-export const createProject = (name: string, members: ProjectMemberModel[]) => {
+export const createProject = (name: string, members: ProjectMember[]) => {
   const logger = new SheetLogger('createProject', HRGS.ss);
   const newColData = [[name, undefined]];
 
