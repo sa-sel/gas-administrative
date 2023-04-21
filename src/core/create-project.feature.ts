@@ -21,8 +21,8 @@ const buildProjectDiscordEmbeds = (project: Project): DiscordEmbed[] => {
 
   fields.pushIf(project.openingDoc, { name: 'Documento de Abertura', value: project.openingDoc?.getUrl() });
   fields.pushIf(project.director || project.manager, { name: '', value: '' });
-  fields.pushIf(project.director, { name: 'Direção', value: project.director.toString(), inline: true });
-  fields.pushIf(project.manager, { name: 'Gerência', value: project.manager.toString(), inline: true });
+  fields.pushIf(project.director, { name: 'Direção', value: project.director?.toString(), inline: true });
+  fields.pushIf(project.manager, { name: 'Gerência', value: project.manager?.toString(), inline: true });
   fields.pushIf(project.members.length, {
     name: `Equipe (${project.members.length})`,
     value: project.members.toString(),

@@ -1,6 +1,7 @@
 import { GS } from '@lib';
 import { createProject } from './create-project.feature';
 import { createProjectOpeningDoc } from './opening-doc.feature';
+import { NamedRange } from '@utils/constants';
 
 export const onOpen = () => {
   // GS.ss.getRangeByName(NamedRange.ProjectData).clearContent();

@@ -1,7 +1,14 @@
 import { getBoardOfDirectors, getDirector, getMemberData } from '@hr/utils';
 import { BaseProject, Student } from '@lib';
 import { DialogTitle, GS, SaDepartment } from '@lib/constants';
-import { appendDataToSheet, copyInsides, exportToPdf, getNamedValue, substituteVariables } from '@lib/functions';
+import {
+  appendDataToSheet,
+  copyInsides,
+  exportToPdf,
+  getNamedValue,
+  substituteVariablesInFile,
+  substituteVariablesInString,
+} from '@lib/functions';
 import { sendEmail } from '@lib/functions/email.util';
 import { File, Folder } from '@lib/models';
 import { GeneralVariable, NamedRange, sheets } from '@utils/constants';
@@ -11,7 +18,6 @@ import { getOpeningDocTemplate, getTmpFolder } from '@utils/functions';
 import emailBodyHtml from '../../../src/views/create-project.email.html';
 
 export class Project extends BaseProject {
-  departmentFolder: Folder;
   openingDoc: File;
 
   constructor(...args: ConstructorParameters<typeof BaseProject>) {
@@ -60,20 +66,20 @@ export class Project extends BaseProject {
         copyInsides(
           folder,
           this.folder,
-          name => this.processStringTemplate(name, templateVariables),
-          file => substituteVariables(file, templateVariables),
+          name => substituteVariablesInString(name, templateVariables),
+          file => substituteVariablesInFile(file, templateVariables),
         );
       }
     }
     GS.ss.toast('Templates e documentos copiados para a pasta do projeto.', DialogTitle.InProgress);
 
     // export opening doc PDF to project folder
-    const openingDocIt = getTmpFolder().getFilesByName(this.processStringTemplate(getOpeningDocTemplate().getName(), templateVariables));
+    const openingDocIt = getTmpFolder().getFilesByName(substituteVariablesInString(getOpeningDocTemplate().getName(), templateVariables));
 
     if (openingDocIt.hasNext()) {
       const openingDocTmp = openingDocIt.next();
 
-      substituteVariables(openingDocTmp, templateVariables);
+      substituteVariablesInFile(openingDocTmp, templateVariables);
       this.openingDoc = exportToPdf(openingDocTmp).moveTo(this.folder);
       openingDocTmp.setTrashed(true);
 
@@ -97,7 +103,7 @@ export class Project extends BaseProject {
     sendEmail({
       subject: `Abertura de Projeto - ${this.name} (${this.edition})`,
       target,
-      htmlBody: this.processStringTemplate(emailBodyHtml),
+      htmlBody: substituteVariablesInString(emailBodyHtml, templateVariables),
       attachments: this.openingDoc && [this.openingDoc],
     });
     GS.ss.toast(`Emails enviados para ${target.length} membros.`, DialogTitle.InProgress);
@@ -107,9 +113,10 @@ export class Project extends BaseProject {
 
   /** Create the opening doc or just return it if it already exists (also force set last updated date). */
   createOrGetOpeningDoc(): File {
+    const { templateVariables } = this;
     const openingDocTemplate = getOpeningDocTemplate();
     const tmpDir = getTmpFolder();
-    const openingDocName = this.processStringTemplate(openingDocTemplate.getName());
+    const openingDocName = substituteVariablesInString(openingDocTemplate.getName(), templateVariables);
     const fileIterator = tmpDir.getFilesByName(openingDocName);
 
     if (fileIterator.hasNext()) {
@@ -117,7 +124,7 @@ export class Project extends BaseProject {
     }
 
     this.openingDoc = openingDocTemplate.makeCopy(openingDocName, tmpDir);
-    substituteVariables(this.openingDoc, this.templateVariables);
+    substituteVariablesInFile(this.openingDoc, templateVariables);
 
     return this.openingDoc;
   }
@@ -151,10 +158,13 @@ export class Project extends BaseProject {
 
     // copy project control spreadsheet template to project folder
     const membersSheetTemplate = DriveApp.getFileById(getNamedValue(NamedRange.ProjectMembersSpreadsheetTemplateId));
-    const projectControlSheetFile = membersSheetTemplate.makeCopy(this.processStringTemplate(membersSheetTemplate.getName()), this.folder);
+    const projectControlSheetFile = membersSheetTemplate.makeCopy(
+      substituteVariablesInString(membersSheetTemplate.getName(), templateVariables),
+      this.folder,
+    );
 
     // substitutes variables in project control spreadsheet
-    substituteVariables(projectControlSheetFile, templateVariables);
+    substituteVariablesInFile(projectControlSheetFile, templateVariables);
 
     const [membersSheet, boardOfDirectorsSheet] = SpreadsheetApp.open(projectControlSheetFile).getSheets();
 
