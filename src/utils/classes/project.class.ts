@@ -22,7 +22,7 @@ export class Project extends BaseProject {
 
   constructor(...args: ConstructorParameters<typeof BaseProject>) {
     super(...args);
-    this.director = getDirector(this.department);
+    this.director = this.department ? getDirector(this.department) : null;
 
     const departmentFolderIt = DriveApp.getFolderById(getNamedValue(NamedRange.DriveRoot))?.getFoldersByName(this.fullDepartmentName);
 
@@ -33,9 +33,16 @@ export class Project extends BaseProject {
 
   /** Create project by reading data from the spreadsheet. */
   static spreadsheetFactory(): Project {
-    return new this(getNamedValue(NamedRange.ProjectName).trim(), getNamedValue(NamedRange.ProjectDepartment).trim() as SaDepartment)
-      .setEdition(getNamedValue(NamedRange.ProjectEdition))
-      .setManager(getMemberData(getNamedValue(NamedRange.ProjectManager)?.split(' - ')[1]));
+    const manager = getNamedValue(NamedRange.ProjectManager)?.split(' - ')[1];
+
+    const project = new this(
+      getNamedValue(NamedRange.ProjectName).trim(),
+      getNamedValue(NamedRange.ProjectDepartment).trim() as SaDepartment,
+    ).setEdition(getNamedValue(NamedRange.ProjectEdition));
+
+    manager && project.setManager(getMemberData(manager));
+
+    return project;
   }
 
   // TODO:
