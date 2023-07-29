@@ -28,7 +28,7 @@ const buildProjectDiscordEmbeds = (project: Project): DiscordEmbed[] => {
 };
 
 export const createProjectOpeningDoc = () =>
-  SafeWrapper.factory(createProjectOpeningDoc.name, () => getBoardOfDirectors().map(({ email }) => email)).wrap(
+  SafeWrapper.factory(createProjectOpeningDoc.name, { allowedEmails: () => getBoardOfDirectors().map(({ email }) => email) }).wrap(
     (logger: SheetLogger): void => {
       const project = Project.spreadsheetFactory();
 

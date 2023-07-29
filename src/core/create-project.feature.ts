@@ -42,12 +42,8 @@ const buildProjectDiscordEmbeds = (project: Project): DiscordEmbed[] => {
   ];
 };
 
-const actuallyCreateProject = (project: Project, logger: SheetLogger) => {
-  if (project.upsert()) {
-    logger.log('Insert realizado!', `O projeto "${project.name}" foi salvo na lista de Projetos Existentes.`);
-  }
-
-  const members: ProjectMember[] = fetchData(GS.ss.getRangeByName(NamedRange.ProjectMembers), {
+const getMembers = (project: Project): ProjectMember[] =>
+  fetchData(GS.ss.getRangeByName(NamedRange.ProjectMembers), {
     filter: row => [project.director?.nUsp, project.manager?.nUsp].includes(row[2]) || (row[2] && row[5]),
     map: row => {
       const member = new ProjectMember({
@@ -68,14 +64,21 @@ const actuallyCreateProject = (project: Project, logger: SheetLogger) => {
     },
   });
 
+const actuallyCreateProject = (project: Project, logger: SheetLogger) => {
+  if (project.upsert()) {
+    logger.log('Insert realizado!', `O projeto "${project.name}" foi salvo na lista de Projetos Existentes.`);
+  }
+
+  const members = getMembers(project);
+
   logger.log(DialogTitle.InProgress, `Projeto "${project.name}" possui ${members.length} membros.`);
 
   hrSheetSaveProject(project.toString(), members);
-  logger.log(`${DialogTitle.Success}`, `Projeto ${project.name} salvo na planilha do RH.`);
+  logger.log(DialogTitle.Success, `Projeto ${project.name} salvo na planilha do RH.`);
 
   const dir = project.setMembers(members).createFolder();
 
-  logger.log(`${DialogTitle.Success}`, `Pasta no Drive criada: ${dir.getName()} (${dir.getUrl()})`);
+  logger.log(DialogTitle.Success, `Pasta no Drive criada: ${dir.getName()} (${dir.getUrl()})`);
 
   const boardWebhook = new DiscordWebhook(getNamedValue(NamedRange.WebhookBoardOfDirectors));
   const generalWebhook = new DiscordWebhook(getNamedValue(NamedRange.WebhookGeneral));
@@ -98,7 +101,7 @@ const actuallyCreateProject = (project: Project, logger: SheetLogger) => {
 };
 
 export const createProject = () =>
-  SafeWrapper.factory(createProject.name, institutionalEmails).wrap((logger: SheetLogger): void => {
+  SafeWrapper.factory(createProject.name, { allowedEmails: institutionalEmails }).wrap((logger: SheetLogger): void => {
     const project = Project.spreadsheetFactory();
 
     if (!project.name || !project.edition || !project.manager || !project.department) {

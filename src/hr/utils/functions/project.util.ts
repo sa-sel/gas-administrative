@@ -6,7 +6,7 @@ import { ProjectMember } from '../classes';
 
 /** Create a new project with its members.*/
 export const createProject = (name: string, members: ProjectMember[]) => {
-  const logger = new SheetLogger('createProject', HRGS.ss);
+  const logger = new SheetLogger('createProject', HRGS.ss.getSheetByName('Logs'));
   const newColData = [[name, undefined]];
 
   logger.log(DialogTitle.InProgress, `Criação do projeto "${name}", disparada na planilha do administrativo.`, false);
