@@ -6,13 +6,14 @@ import { getMemberData } from './member.util';
 export const getDirector = (department: SaDepartment): Student | null => {
   let nusp: string;
   let director: Student;
+  const dpt = SaDepartmentAbbreviations[department] ?? department;
 
   // get nusps
-  manageDataInSheets(SaDepartmentAbbreviations[department] ?? department, [hrSheets.projectMemberships], cell => {
+  manageDataInSheets(dpt, [hrSheets.projectMemberships], cell => {
     const col = cell.getColumn();
     const sheet = cell.getSheet();
 
-    if (cell.getRow() === 1 && col > sheet.getFrozenColumns()) {
+    if (cell.getRow() === 1 && cell.getValue() === dpt && col > sheet.getFrozenColumns()) {
       const nFrozenRows = sheet.getFrozenRows();
       const departmentCol = sheet.getRange(nFrozenRows, col, sheet.getMaxRows() - nFrozenRows, 1);
       const directorCell = departmentCol.createTextFinder(ProjectRole.Director).findNext();
