@@ -1,7 +1,7 @@
 import { ProjectRole } from '@hr/models';
-import { ProjectMember, createProject as hrSheetSaveProject } from '@hr/utils';
-import { DialogTitle, DiscordEmbed, GS, confirm, fetchData, getNamedValue, institutionalEmails, toString } from '@lib';
-import { DiscordWebhook, SafeWrapper, SheetLogger } from '@lib/classes';
+import { ProjectMember, rollbackCreateProject as rollbackSaveProjectInHR, createProject as saveProjectInHR } from '@hr/utils';
+import { DialogTitle, DiscordEmbed, Folder, GS, confirm, fetchData, getNamedValue, institutionalEmails, toString } from '@lib';
+import { DiscordWebhook, SafeWrapper, SheetLogger, Transaction } from '@lib/classes';
 import { Project } from '@utils/classes';
 import { NamedRange } from '@utils/constants';
 
@@ -69,16 +69,29 @@ const actuallyCreateProject = (project: Project, logger: SheetLogger) => {
     logger.log('Insert realizado!', `O projeto "${project.name}" foi salvo na lista de Projetos Existentes.`);
   }
 
+  let dir: Folder;
   const members = getMembers(project);
 
   logger.log(DialogTitle.InProgress, `Projeto "${project.name}" possui ${members.length} membros.`);
 
-  hrSheetSaveProject(project.toString(), members);
-  logger.log(DialogTitle.Success, `Projeto ${project.name} salvo na planilha do RH.`);
-
-  const dir = project.setMembers(members).createFolder();
-
-  logger.log(DialogTitle.Success, `Pasta no Drive criada: ${dir.getName()} (${dir.getUrl()})`);
+  new Transaction(logger)
+    .step({
+      forward: () => {
+        saveProjectInHR(project.toString(), members);
+        logger.log(DialogTitle.Success, `Projeto ${project.name} salvo na planilha do RH.`);
+      },
+      backward: () => rollbackSaveProjectInHR(project.toString()),
+    })
+    .step({
+      forward: () => {
+        dir = project.setMembers(members).createFolder();
+        logger.log(DialogTitle.Success, `Pasta no Drive criada: ${dir.getName()} (${dir.getUrl()})`);
+      },
+      backward: () => {
+        dir.setTrashed(true);
+      },
+    })
+    .run();
 
   const boardWebhook = new DiscordWebhook(getNamedValue(NamedRange.WebhookBoardOfDirectors));
   const generalWebhook = new DiscordWebhook(getNamedValue(NamedRange.WebhookGeneral));
@@ -105,6 +118,7 @@ export const createProject = () =>
     const project = Project.spreadsheetFactory();
 
     if (!project.name || !project.edition || !project.manager || !project.department) {
+      GS.ss.getRangeByName(NamedRange.ProjectData).activate();
       throw Error('Estão faltando informações do projeto a ser aberto. São necessário pelo menos nome, edição, gerente e área.');
     }
 

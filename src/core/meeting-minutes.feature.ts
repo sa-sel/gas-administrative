@@ -21,6 +21,7 @@ import {
   substituteVariablesInString,
   toString,
 } from '@lib';
+import { MeetingType } from '@lib/constants/meeting.constant';
 import { AdministrativeVariable, NamedRange } from '@utils/constants';
 
 const buildDiscordEmbeds = (
@@ -119,14 +120,23 @@ export const createMeetingMinutes = () =>
     const president = getDirector(SaDepartment.Presidency);
     const vicePresident = getDirector(SaDepartment.VicePresidency);
     const secretary = getDirector(SaDepartment.Secretary);
-    const attendees = getAttendees();
     const meetingType = getNamedValue(NamedRange.MeetingType);
+    const attendees = getAttendees();
 
     const [isPresidentPresent, isVicePresidentPresent, isSecretaryPresent] = areElementsInList(
       [president, vicePresident, secretary],
       attendees,
       (a, b) => a?.nUsp === b?.nUsp && a?.nUsp !== null,
     );
+
+    if (!attendees.length || (!isPresidentPresent && !isVicePresidentPresent && !isSecretaryPresent)) {
+      GS.ss.getRangeByName(NamedRange.MeetingAttendees).activate();
+      throw Error(
+        !attendees.length
+          ? 'Nenhum membro foi selecionado para participar da reunião.'
+          : 'Nenhum membro do time administrativo foi selecionado para participar da reunião.',
+      );
+    }
 
     // usually:
     // secretary is the clerk if present
@@ -138,23 +148,22 @@ export const createMeetingMinutes = () =>
 
     const meetingStart = new Date();
     const minutesFile = createMinutesFile(meetingType, meetingStart, attendees, president, vicePresident, secretary, clerk);
+    const body = `Ata criada com sucesso:\n${minutesFile.getUrl()}`;
 
     // clear attendee checkboxes
     GS.ss.getRangeByName(NamedRange.MeetingAttendees).clearContent();
 
-    const webhooks = [
-      new DiscordWebhook(getNamedValue(NamedRange.WebhookGeneral)),
-      new DiscordWebhook(getNamedValue(NamedRange.WebhookBoardOfDirectors)),
-    ];
-    const body = `Ata criada com sucesso:\n${minutesFile.getUrl()}`;
-
     alert({ title: DialogTitle.Success, body });
     logger.log(DialogTitle.Success, body);
 
-    webhooks.forEach(webhook =>
-      webhook.post({
-        embeds: buildDiscordEmbeds(meetingType, minutesFile, meetingStart, attendees, president, vicePresident, secretary, clerk),
-      }),
-    );
-    webhooks.some(webhook => webhook.url.isUrl()) && logger?.log(DialogTitle.InProgress, 'Ata enviada no Discord.');
+    const generalWebhook = new DiscordWebhook(getNamedValue(NamedRange.WebhookGeneral));
+    const boardWebhook = new DiscordWebhook(getNamedValue(NamedRange.WebhookBoardOfDirectors));
+    const embeds = buildDiscordEmbeds(meetingType, minutesFile, meetingStart, attendees, president, vicePresident, secretary, clerk);
+
+    boardWebhook.post({ embeds });
+    meetingType === MeetingType.Global && generalWebhook.post({ embeds });
+
+    if (boardWebhook.url.isUrl || (meetingType === MeetingType.Global && generalWebhook.url.isUrl())) {
+      logger?.log(DialogTitle.InProgress, 'Ata enviada no Discord.');
+    }
   });

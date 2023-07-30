@@ -1,4 +1,4 @@
-import { DialogTitle, DiscordEmbed, DiscordWebhook, SafeWrapper, SheetLogger, alert, getNamedValue, institutionalEmails } from '@lib';
+import { DialogTitle, DiscordEmbed, DiscordWebhook, GS, SafeWrapper, SheetLogger, alert, getNamedValue, institutionalEmails } from '@lib';
 import { Project } from '@utils/classes';
 import { NamedRange } from '@utils/constants';
 
@@ -31,6 +31,7 @@ export const createProjectOpeningDoc = () =>
     const project = Project.spreadsheetFactory();
 
     if (!project.name || !project.edition || !project.department) {
+      GS.ss.getRangeByName(NamedRange.ProjectData).activate();
       throw Error('Estão faltando informações do projeto a ser aberto. São necessário pelo menos nome, edição e diretoria.');
     }
 

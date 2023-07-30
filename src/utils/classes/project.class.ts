@@ -1,5 +1,5 @@
 import { getBoardOfDirectors, getDirector, getMemberData } from '@hr/utils';
-import { BaseProject, Student } from '@lib';
+import { BaseProject, Student, Transaction } from '@lib';
 import { DialogTitle, GS, SaDepartment } from '@lib/constants';
 import {
   appendDataToSheet,
@@ -46,11 +46,8 @@ export class Project extends BaseProject {
   }
 
   // TODO:
-  // - lidar com os novos templates da Padrão
+  // - lidar com doc de Guia de Projeto
   // - atualizar enums e variáveis na planilha do RH
-  // - scripts de ata de RD/RG (envio por email pra SA-SEL inteira + #general + #diretoria) -> salvar log na planilha do admin
-  // - script planilha de controle de projeto (criação de ata) -> salvar log na planilha de controle de projeto
-  // - script de projeto (envio por email pra projeto + diretoria + #diretoria + #projeto)
   createFolder(): Folder {
     if (!this.departmentFolder) {
       throw new ReferenceError("The Drive's root or the department's folder was not found.");
@@ -84,11 +81,11 @@ export class Project extends BaseProject {
     const openingDocIt = getTmpFolder().getFilesByName(substituteVariablesInString(getOpeningDocTemplate().getName(), templateVariables));
 
     if (openingDocIt.hasNext()) {
-      const openingDocTmp = openingDocIt.next();
+      const openingDocEditable = openingDocIt.next();
 
-      substituteVariablesInFile(openingDocTmp, templateVariables);
-      this.openingDoc = exportToPdf(openingDocTmp).moveTo(this.folder);
-      openingDocTmp.setTrashed(true);
+      substituteVariablesInFile(openingDocEditable, templateVariables);
+      this.openingDoc = exportToPdf(openingDocEditable).moveTo(this.folder);
+      openingDocEditable.setTrashed(true);
 
       GS.ss.toast('PDF do documento de abertura exportado.', DialogTitle.InProgress);
     } else {
@@ -130,8 +127,15 @@ export class Project extends BaseProject {
       return fileIterator.next().setName(openingDocName);
     }
 
-    this.openingDoc = openingDocTemplate.makeCopy(openingDocName, tmpDir);
-    substituteVariablesInFile(this.openingDoc, templateVariables);
+    new Transaction()
+      .step({
+        forward: () => (this.openingDoc = openingDocTemplate.makeCopy(openingDocName, tmpDir)),
+        backward: () => this.openingDoc?.setTrashed(true),
+      })
+      .step({
+        forward: () => substituteVariablesInFile(this.openingDoc, templateVariables),
+      })
+      .run();
 
     return this.openingDoc;
   }
@@ -163,21 +167,35 @@ export class Project extends BaseProject {
       return;
     }
 
-    // copy project control spreadsheet template to project folder
-    const membersSheetTemplate = DriveApp.getFileById(getNamedValue(NamedRange.ProjectMembersSpreadsheetTemplateId));
-    const projectControlSheetFile = membersSheetTemplate.makeCopy(
-      substituteVariablesInString(membersSheetTemplate.getName(), templateVariables),
-      this.folder,
-    );
+    let projectControlSheetFile: File;
 
-    // substitutes variables in project control spreadsheet
-    substituteVariablesInFile(projectControlSheetFile, templateVariables);
+    new Transaction()
+      .step({
+        // copy project control spreadsheet template to project folder
+        forward: () => {
+          const membersSheetTemplate = DriveApp.getFileById(getNamedValue(NamedRange.ProjectMembersSpreadsheetTemplateId));
 
-    const [membersSheet, boardOfDirectorsSheet] = SpreadsheetApp.open(projectControlSheetFile).getSheets();
+          projectControlSheetFile = membersSheetTemplate.makeCopy(
+            substituteVariablesInString(membersSheetTemplate.getName(), templateVariables),
+            this.folder,
+          );
+        },
+        backward: () => projectControlSheetFile?.setTrashed(true),
+      })
+      .step({
+        // substitutes variables in project control spreadsheet
+        forward: () => substituteVariablesInFile(projectControlSheetFile, templateVariables),
+      })
+      .step({
+        forward: () => {
+          const [membersSheet, boardOfDirectorsSheet] = SpreadsheetApp.open(projectControlSheetFile).getSheets();
 
-    // write members list to project control sheet
-    appendDataToSheet(this.members, membersSheet, m => [undefined, m.name, m.nickname, m.email, undefined, undefined]);
-    // write directors list to project control sheet
-    appendDataToSheet(boardOfDirectors, boardOfDirectorsSheet, m => [m.name, m.nickname, m.email]);
+          // write members list to project control sheet
+          appendDataToSheet(this.members, membersSheet, m => [undefined, m.name, m.nickname, m.email, undefined, undefined]);
+          // write directors list to project control sheet
+          appendDataToSheet(boardOfDirectors, boardOfDirectorsSheet, m => [m.name, m.nickname, m.email]);
+        },
+      })
+      .run();
   }
 }
