@@ -38,7 +38,13 @@ export const getDirector = (department: SaDepartment): Student | null => {
   return director;
 };
 
-export const getBoardOfDirectors = (): Student[] => {
+let cachedBoardOfDirectors: Student[] | null;
+
+export const getBoardOfDirectors = (ignoreCache = false): Student[] => {
+  if (cachedBoardOfDirectors?.length && !ignoreCache) {
+    return cachedBoardOfDirectors;
+  }
+
   const directorNusps: Set<string> = new Set();
 
   // get nusps
@@ -54,7 +60,7 @@ export const getBoardOfDirectors = (): Student[] => {
   });
 
   // get member data
-  return Array.from(directorNusps).reduce((board, nusp) => {
+  return (cachedBoardOfDirectors = Array.from(directorNusps).reduce((board, nusp) => {
     try {
       board.push(getMemberData(nusp));
     } catch (err) {
@@ -64,5 +70,5 @@ export const getBoardOfDirectors = (): Student[] => {
     }
 
     return board;
-  }, []);
+  }, []));
 };
