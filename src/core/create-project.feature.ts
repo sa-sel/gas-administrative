@@ -1,9 +1,29 @@
 import { ProjectRole } from '@hr/models';
-import { ProjectMember, rollbackCreateProject as rollbackSaveProjectInHR, createProject as saveProjectInHR } from '@hr/utils';
-import { DialogTitle, DiscordEmbed, Folder, GS, confirm, fetchData, getNamedValue, institutionalEmails, toString } from '@lib';
+import {
+  ProjectMember,
+  getBoardOfDirectors,
+  rollbackCreateProject as rollbackSaveProjectInHR,
+  createProject as saveProjectInHR,
+} from '@hr/utils';
+import {
+  DialogTitle,
+  DiscordEmbed,
+  Folder,
+  GS,
+  confirm,
+  fetchData,
+  getNamedValue,
+  institutionalEmails,
+  sendEmail,
+  substituteVariablesInString,
+  toString,
+} from '@lib';
 import { DiscordWebhook, SafeWrapper, SheetLogger, Transaction } from '@lib/classes';
 import { Project } from '@utils/classes';
 import { NamedRange } from '@utils/constants';
+
+// TODO: how to use "@views/" here?
+import emailBodyHtml from '../views/create-project.email.html';
 
 const dialogBody = `
 Você tem certeza que deseja continuar com essa ação? Ela é irreversível e vai:
@@ -85,7 +105,11 @@ const actuallyCreateProject = (project: Project, logger: SheetLogger) => {
     .step({
       forward: () => {
         dir = project.setMembers(members).createFolder();
-        logger.log(DialogTitle.Success, `Pasta no Drive criada: ${dir.getName()} (${dir.getUrl()})`);
+        logger.log(
+          DialogTitle.InProgress,
+          `Pasta no Drive criada: ${dir.getName()}. Serão enviadas notificações por email e Discord - ` +
+            `se houver algum erro nesse processo, a pasta não será comprometida. Link:\n${dir.getUrl()}`,
+        );
       },
       backward: () => {
         dir.setTrashed(true);
@@ -93,6 +117,7 @@ const actuallyCreateProject = (project: Project, logger: SheetLogger) => {
     })
     .run();
 
+  const emailTarget = [...project.members.map(({ email }) => email), ...getBoardOfDirectors().map(({ email }) => email)];
   const boardWebhook = new DiscordWebhook(getNamedValue(NamedRange.WebhookBoardOfDirectors));
   const generalWebhook = new DiscordWebhook(getNamedValue(NamedRange.WebhookGeneral));
   const embeds: DiscordEmbed[] = buildProjectDiscordEmbeds(project);
@@ -102,7 +127,20 @@ const actuallyCreateProject = (project: Project, logger: SheetLogger) => {
     .removeAccents()
     .replace(/[^\w\d-]/g, '');
 
+  // send project to members by email
+  sendEmail({
+    subject: `Abertura de Projeto - ${project.name} (${project.edition})`,
+    target: emailTarget,
+    htmlBody: substituteVariablesInString(emailBodyHtml, project.templateVariables),
+    attachments: project.openingDoc && [project.openingDoc],
+  });
+  logger.log(DialogTitle.InProgress, `Emails enviados para ${emailTarget.length} membros.`);
+
+  // send project to Discord in #general
   generalWebhook.post({ embeds });
+  generalWebhook.url.isUrl() && logger.log(DialogTitle.InProgress, 'Notificação enviada no Discord: #general.');
+
+  // send project to Discord in board of directors channel
   boardWebhook.post({
     content:
       'Olá Diretoria:tm: , tudo bem?\n' +
@@ -111,6 +149,9 @@ const actuallyCreateProject = (project: Project, logger: SheetLogger) => {
       `não esquece de criar o canal do projeto aqui no Discord: **#${discordChannel}**.`,
     embeds,
   });
+  boardWebhook.url.isUrl() && logger.log(DialogTitle.InProgress, 'Notificação enviada no canal da diretoria no Discord.');
+
+  logger.log(DialogTitle.Success, 'Abertura de projeto concluída.');
 };
 
 export const createProject = () =>

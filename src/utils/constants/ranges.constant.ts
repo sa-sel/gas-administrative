@@ -8,6 +8,8 @@ export const enum NamedRange {
   ProjectMembersSpreadsheetTemplateId = 'ProjectMembersSpreadsheetTemplateId',
   ProjectMembersSpreadsheetTemplateSheetName = 'ProjectMembersSpreadsheetTemplateSheetName',
   ProjectOpeningDocId = 'ProjectOpeningDocId',
+  ProjectGuideDocId = 'ProjectGuideDocId',
+  ProjectGuidesRepositoryId = 'ProjectGuidesFolderId',
 
   ProjectData = 'ProjectData',
   ProjectDepartment = 'ProjectDepartment',
